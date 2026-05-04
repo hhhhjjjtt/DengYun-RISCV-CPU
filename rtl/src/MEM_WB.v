@@ -17,7 +17,7 @@ module MEM_WB (
     output reg[`RegsAddrBus]    o_regd_addr,
     output reg[`DataBus]        o_regd_data,
 
-    // forwarding to ex
+    // forward to ex
     output reg                  o_mem_wb_regd_we,
     output reg[`RegsAddrBus]    o_mem_wb_regd_addr,
     output reg[`DataBus]        o_mem_wb_regd_data

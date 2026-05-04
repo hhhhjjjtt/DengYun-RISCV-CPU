@@ -41,7 +41,16 @@ module cpu_top (
     wire[`RegsAddrBus]      id_0_w_reg2_addr;
     wire[`RegsAddrBus]      id_0_w_regd_addr;
     wire[`DataBus]          id_0_w_imm_data;
-    wire[`CtrlBundleBus]    id_0_w_ctrl_bundle; 
+    wire                    id_0_w_Reg_we;
+    wire                    id_0_w_ALU_src_A;
+    wire[1:0]               id_0_w_ALU_src_B;
+    wire[4:0]               id_0_w_ALU_op;
+    wire[2:0]               id_0_w_Branch;
+    wire                    id_0_w_MemtoReg_src;
+    wire                    id_0_w_Mem_we;
+    wire                    id_0_w_Mem_re;
+    wire[2:0]               id_0_w_Mem_op;
+    wire                    id_0_w_id_load_use;
     // regs_0 outputs
     wire[`DataBus]          regs_0_w_rd_data1;
     wire[`DataBus]          regs_0_w_rd_data2;
@@ -54,8 +63,23 @@ module cpu_top (
     wire[`RegsAddrBus]      id_ex_0_w_reg2_addr;
     wire[`RegsAddrBus]      id_ex_0_w_regd_addr;  
     wire[`DataBus]          id_ex_0_w_imm_data;  
-    wire[`CtrlBundleBus]    id_ex_0_w_ctrl_bundle;
+    wire                    id_ex_0_w_Reg_we;
+    wire                    id_ex_0_w_ALU_src_A;
+    wire[1:0]               id_ex_0_w_ALU_src_B;
+    wire[4:0]               id_ex_0_w_ALU_op;
+    wire[2:0]               id_ex_0_w_Branch;
+    wire                    id_ex_0_w_MemtoReg_src;
+    wire                    id_ex_0_w_Mem_we;
+    wire                    id_ex_0_w_Mem_re;
+    wire[2:0]               id_ex_0_w_Mem_op;
+    wire                    id_ex_0_w_id_ex_Mem_re;
+    wire                    id_ex_0_w_id_ex_Reg_we;
+    wire[`RegsAddrBus]      id_ex_0_w_id_ex_regd_addr;
     // EX_0 outputs
+    wire[`DataBus]          ex_0_w_dividend_data;
+    wire[`DataBus]          ex_0_w_divisor_data;
+    wire                    ex_0_w_div_valid;
+    wire                    ex_0_w_div_signed;
     wire[`InstAddrBus]      ex_0_w_pc_addr;
     wire[`DataBus]          ex_0_w_inst_data;
     wire                    ex_0_w_wb_src;
@@ -68,9 +92,13 @@ module cpu_top (
     wire[`DataBus]          ex_0_w_mem_wr_data_raw;
     wire[`MemOpTypeBus]     ex_0_w_mem_op_type;
     wire                    ex_0_w_ex_branch;
-    wire                    ex_0_w_ex_load_use;
+    wire                    ex_0_w_ex_division_busy;
     wire                    ex_0_w_jump_flag;
     wire[`InstAddrBus]      ex_0_w_jump_addr;
+    // Divider_0 outputs
+    wire[`DataBus]          divider_0_w_quotient_data;
+    wire[`DataBus]          divider_0_w_remainder_data;
+    wire                    divider_0_w_div_ready;
     // EX_MEM_0 outputs
     wire[`InstAddrBus]      ex_mem_0_w_pc_addr;
     wire[`DataBus]          ex_mem_0_w_inst_data;
@@ -120,8 +148,9 @@ module cpu_top (
 
     ctrl ctrl_0 (
         .i_if_stall             (if_0_w_if_stall),
+        .i_id_load_use          (id_0_w_id_load_use),
         .i_ex_branch            (ex_0_w_ex_branch),
-        .i_ex_load_use          (ex_0_w_ex_load_use),
+        .i_ex_division_busy     (ex_0_w_ex_division_busy),
         .i_jump_flag            (ex_0_w_jump_flag),
         .i_jump_addr            (ex_0_w_jump_addr),
         .i_mem_stall            (mem_0_w_mem_stall),
@@ -184,6 +213,9 @@ module cpu_top (
         .i_inst_data            (if_id_0_w_inst_dat),
         .i_reg1_rd_data         (regs_0_w_rd_data1), 
         .i_reg2_rd_data         (regs_0_w_rd_data2), 
+        .i_id_ex_Mem_re         (id_ex_0_w_id_ex_Mem_re),
+        .i_id_ex_Reg_we         (id_ex_0_w_id_ex_Reg_we),
+        .i_id_ex_regd_addr      (id_ex_0_w_id_ex_regd_addr),
         .o_reg1_rd_addr         (id_0_w_reg1_rd_addr), 
         .o_reg2_rd_addr         (id_0_w_reg2_rd_addr), 
         .o_pc_addr              (id_0_w_pc_addr),     
@@ -194,7 +226,16 @@ module cpu_top (
         .o_reg2_addr            (id_0_w_reg2_addr),
         .o_regd_addr            (id_0_w_regd_addr),
         .o_imm_data             (id_0_w_imm_data),
-        .o_ctrl_bundle          (id_0_w_ctrl_bundle)
+        .o_Reg_we               (id_0_w_Reg_we),
+        .o_ALU_src_A            (id_0_w_ALU_src_A),
+        .o_ALU_src_B            (id_0_w_ALU_src_B),
+        .o_ALU_op               (id_0_w_ALU_op),
+        .o_Branch               (id_0_w_Branch),
+        .o_MemtoReg_src         (id_0_w_MemtoReg_src),
+        .o_Mem_we               (id_0_w_Mem_we),
+        .o_Mem_re               (id_0_w_Mem_re),
+        .o_Mem_op               (id_0_w_Mem_op),
+        .o_id_load_use          (id_0_w_id_load_use)
     );
 
     regs regs_0 (
@@ -220,7 +261,15 @@ module cpu_top (
         .i_reg2_addr            (id_0_w_reg2_addr), 
         .i_regd_addr            (id_0_w_regd_addr),  
         .i_imm_data             (id_0_w_imm_data),   
-        .i_ctrl_bundle          (id_0_w_ctrl_bundle),
+        .i_Reg_we               (id_0_w_Reg_we),
+        .i_ALU_src_A            (id_0_w_ALU_src_A),
+        .i_ALU_src_B            (id_0_w_ALU_src_B),
+        .i_ALU_op               (id_0_w_ALU_op),
+        .i_Branch               (id_0_w_Branch),
+        .i_MemtoReg_src         (id_0_w_MemtoReg_src),
+        .i_Mem_we               (id_0_w_Mem_we),
+        .i_Mem_re               (id_0_w_Mem_re),
+        .i_Mem_op               (id_0_w_Mem_op),
         .i_ctrl_flag            (ctrl_0_w_id_ex_ctrl),
         .o_pc_addr              (id_ex_0_w_pc_addr),    
         .o_inst_data            (id_ex_0_w_inst_data),  
@@ -230,7 +279,18 @@ module cpu_top (
         .o_reg2_addr            (id_ex_0_w_reg2_addr),
         .o_regd_addr            (id_ex_0_w_regd_addr),  
         .o_imm_data             (id_ex_0_w_imm_data),   
-        .o_ctrl_bundle          (id_ex_0_w_ctrl_bundle)
+        .o_Reg_we               (id_ex_0_w_Reg_we),
+        .o_ALU_src_A            (id_ex_0_w_ALU_src_A),
+        .o_ALU_src_B            (id_ex_0_w_ALU_src_B),
+        .o_ALU_op               (id_ex_0_w_ALU_op),
+        .o_Branch               (id_ex_0_w_Branch),
+        .o_MemtoReg_src         (id_ex_0_w_MemtoReg_src),
+        .o_Mem_we               (id_ex_0_w_Mem_we),
+        .o_Mem_re               (id_ex_0_w_Mem_re),
+        .o_Mem_op               (id_ex_0_w_Mem_op),
+        .o_id_ex_Mem_re         (id_ex_0_w_id_ex_Mem_re),
+        .o_id_ex_Reg_we         (id_ex_0_w_id_ex_Reg_we),
+        .o_id_ex_regd_addr      (id_ex_0_w_id_ex_regd_addr)
     );
 
     EX EX_0 (
@@ -242,13 +302,28 @@ module cpu_top (
         .i_reg2_addr            (id_ex_0_w_reg2_addr),
         .i_regd_addr            (id_ex_0_w_regd_addr),
         .i_imm_data             (id_ex_0_w_imm_data),
-        .i_ctrl_bundle          (id_ex_0_w_ctrl_bundle),
+        .i_Reg_we               (id_ex_0_w_Reg_we),
+        .i_ALU_src_A            (id_ex_0_w_ALU_src_A),
+        .i_ALU_src_B            (id_ex_0_w_ALU_src_B),
+        .i_ALU_op               (id_ex_0_w_ALU_op),
+        .i_Branch               (id_ex_0_w_Branch),
+        .i_MemtoReg_src         (id_ex_0_w_MemtoReg_src),
+        .i_Mem_we               (id_ex_0_w_Mem_we),
+        .i_Mem_re               (id_ex_0_w_Mem_re),
+        .i_Mem_op               (id_ex_0_w_Mem_op),
         .i_ex_mem_regd_we       (ex_mem_0_w_ex_mem_regd_we),
         .i_ex_mem_regd_addr     (ex_mem_0_w_ex_mem_regd_addr),
         .i_ex_mem_regd_data     (ex_mem_0_w_ex_mem_regd_data),
         .i_mem_wb_regd_we       (mem_wb_0_w_mem_wb_regd_we),
         .i_mem_wb_regd_addr     (mem_wb_0_w_mem_wb_regd_addr),
         .i_mem_wb_regd_data     (mem_wb_0_w_mem_wb_regd_data),
+        .i_quotient_data        (divider_0_w_quotient_data),
+        .i_remainder_data       (divider_0_w_remainder_data),
+        .i_div_ready            (divider_0_w_div_ready),
+        .o_dividend_data        (ex_0_w_dividend_data),
+        .o_divisor_data         (ex_0_w_divisor_data),
+        .o_div_valid            (ex_0_w_div_valid),
+        .o_div_signed           (ex_0_w_div_signed),
         .o_pc_addr              (ex_0_w_pc_addr),
         .o_inst_data            (ex_0_w_inst_data),
         .o_wb_src               (ex_0_w_wb_src),
@@ -261,9 +336,21 @@ module cpu_top (
         .o_mem_wr_data_raw      (ex_0_w_mem_wr_data_raw),
         .o_mem_op_type          (ex_0_w_mem_op_type),
         .o_ex_branch            (ex_0_w_ex_branch),
-        .o_ex_load_use          (ex_0_w_ex_load_use),
+        .o_ex_division_busy     (ex_0_w_ex_division_busy),
         .o_jump_flag            (ex_0_w_jump_flag),
         .o_jump_addr            (ex_0_w_jump_addr)
+    );
+
+    Divider Divider_0 (
+        .i_Clk                  (i_Clk),
+        .i_reset                (i_reset),
+        .i_dividend_data        (ex_0_w_dividend_data),
+        .i_divisor_data         (ex_0_w_divisor_data),
+        .i_div_valid            (ex_0_w_div_valid),
+        .i_div_signed           (ex_0_w_div_signed),
+        .o_quotient_data        (divider_0_w_quotient_data),
+        .o_remainder_data       (divider_0_w_remainder_data),
+        .o_div_ready            (divider_0_w_div_ready)
     );
 
     EX_MEM EX_MEM_0 (

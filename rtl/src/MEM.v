@@ -65,15 +65,15 @@ module MEM (
 
         if (i_mem_we) begin
             case (i_mem_op_type)
-                `cb_Mem_op_byte: begin
+                `Mem_op_byte: begin
                     o_dmem_wr_strb = 4'b0001 << i_mem_addr[1:0];
                     o_dmem_wr_data = i_mem_wr_data_raw << ({i_mem_addr[1:0], 3'b000});
                 end
-                `cb_Mem_op_half: begin
+                `Mem_op_half: begin
                     o_dmem_wr_strb = 4'b0011 << {i_mem_addr[1], 1'b0};
                     o_dmem_wr_data = i_mem_wr_data_raw << ({i_mem_addr[1], 4'b0000});
                 end
-                `cb_Mem_op_word: begin
+                `Mem_op_word: begin
                     o_dmem_wr_strb = 4'b1111;
                     o_dmem_wr_data = i_mem_wr_data_raw;
                 end
@@ -86,19 +86,19 @@ module MEM (
 
         if (i_wb_src == `WB_src_MEM) begin
             case (i_mem_op_type)
-                `cb_Mem_op_byte: begin
+                `Mem_op_byte: begin
                     o_regd_data = {{24{rd_shift_b[7]}}, rd_shift_b[7:0]};
                 end
-                `cb_Mem_op_half: begin
+                `Mem_op_half: begin
                     o_regd_data = {{16{rd_shift_h[15]}}, rd_shift_h[15:0]};
                 end
-                `cb_Mem_op_word: begin
+                `Mem_op_word: begin
                     o_regd_data = i_dmem_rd_data;
                 end
-                `cb_Mem_op_ubyte: begin
+                `Mem_op_ubyte: begin
                     o_regd_data = {24'b0, rd_shift_b[7:0]};
                 end
-                `cb_Mem_op_uhalf: begin
+                `Mem_op_uhalf: begin
                     o_regd_data = {16'b0, rd_shift_h[15:0]};
                 end
                 default: begin

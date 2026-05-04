@@ -10,17 +10,35 @@ module EX (
     input wire[`RegsAddrBus]    i_reg2_addr,
     input wire[`RegsAddrBus]    i_regd_addr,
     input wire[`DataBus]        i_imm_data,
-    input wire[`CtrlBundleBus]  i_ctrl_bundle,
 
-    // from ex_mem
+    input wire                  i_Reg_we,
+    input wire                  i_ALU_src_A,
+    input wire[1:0]             i_ALU_src_B,
+    input wire[4:0]             i_ALU_op,
+    input wire[2:0]             i_Branch,
+    input wire                  i_MemtoReg_src,
+    input wire                  i_Mem_we,
+    input wire                  i_Mem_re,
+    input wire[2:0]             i_Mem_op,
+
+    // forward from ex_mem
     input wire                  i_ex_mem_regd_we,
     input wire[`RegsAddrBus]    i_ex_mem_regd_addr,
     input wire[`DataBus]        i_ex_mem_regd_data,
     
-    // from mem_wb
+    // forward from mem_wb
     input wire                  i_mem_wb_regd_we,
     input wire[`RegsAddrBus]    i_mem_wb_regd_addr,
     input wire[`DataBus]        i_mem_wb_regd_data,
+
+    // I/O with Divider
+    input wire[`DataBus]        i_quotient_data,
+    input wire[`DataBus]        i_remainder_data,
+    input wire                  i_div_ready,        // result ready
+    output reg[`DataBus]        o_dividend_data,
+    output reg[`DataBus]        o_divisor_data,
+    output reg                  o_div_valid,        // division instruction vallid
+    output reg                  o_div_signed,
 
     // to ex_mem
     output reg[`InstAddrBus]    o_pc_addr,
@@ -37,30 +55,33 @@ module EX (
 
     // to ctrl
     output reg                  o_ex_branch,
-    output reg                  o_ex_load_use,
+    output reg                  o_ex_division_busy,
     output reg                  o_jump_flag,
     output reg[`InstAddrBus]    o_jump_addr
 );
 
-    // decode ctrl_bundle
-    wire        cb_Reg_we = i_ctrl_bundle[16];                                             // wheter to write to rd
-    wire        cb_ALU_src_A = i_ctrl_bundle[15];     // ALU input source A
-    wire[1:0]   cb_ALU_src_B = i_ctrl_bundle[14:13];  // ALU input source B
-    wire[3:0]   cb_ALU_op = i_ctrl_bundle[12:9];                                           // ALU operation type
-    wire[2:0]   cb_Branch = i_ctrl_bundle[8:6];                                            // Branch type
-    wire        cb_MemtoReg_src = i_ctrl_bundle[5];                                        // source to write to rd, from memory(1) or ALU(0)
-    wire        cb_Mem_we = i_ctrl_bundle[4];                                              // whether to write to data ram
-    wire        cb_Mem_re = i_ctrl_bundle[3];                                              // whether to read from data ram
-    wire[2:0]   cb_Mem_op = i_ctrl_bundle[2:0];                                            // memory operation length
+    wire ex_mem_writeReg1 = i_ex_mem_regd_we && 
+                        (i_reg1_addr == i_ex_mem_regd_addr) && 
+                        (i_ex_mem_regd_addr != `Reg0Addr);
+    wire ex_mem_writeReg2 = i_ex_mem_regd_we && 
+                        (i_reg2_addr == i_ex_mem_regd_addr) && 
+                        (i_ex_mem_regd_addr != `Reg0Addr);
+    
+    wire mem_wb_writeReg1 = i_mem_wb_regd_we && 
+                        (i_reg1_addr == i_mem_wb_regd_addr) && 
+                        (i_mem_wb_regd_addr != `Reg0Addr);
+    wire mem_wb_writeReg2 = i_mem_wb_regd_we && 
+                        (i_reg2_addr == i_mem_wb_regd_addr) && 
+                        (i_mem_wb_regd_addr != `Reg0Addr);
 
-    wire ex_mem_forwardA = i_ex_mem_regd_we && (i_reg1_addr == i_ex_mem_regd_addr) && (i_ex_mem_regd_addr != `Reg0Addr) && (cb_ALU_src_A == `cb_ALU_src_A_rs1);
-    wire ex_mem_forwardB = i_ex_mem_regd_we && (i_reg2_addr == i_ex_mem_regd_addr) && (i_ex_mem_regd_addr != `Reg0Addr) && (cb_ALU_src_B == `cb_ALU_src_B_rs2);
+    wire ex_mem_forwardA = ex_mem_writeReg1 && (i_ALU_src_A == `ALU_src_A_rs1);
+    wire ex_mem_forwardB = ex_mem_writeReg2 && (i_ALU_src_B == `ALU_src_B_rs2);
 
-    wire mem_wb_forwardA = i_mem_wb_regd_we && (i_reg1_addr == i_mem_wb_regd_addr) && (i_mem_wb_regd_addr != `Reg0Addr) && (cb_ALU_src_A == `cb_ALU_src_A_rs1);
-    wire mem_wb_forwardB = i_mem_wb_regd_we && (i_reg2_addr == i_mem_wb_regd_addr) && (i_mem_wb_regd_addr != `Reg0Addr) && (cb_ALU_src_B == `cb_ALU_src_B_rs2);
+    wire mem_wb_forwardA = mem_wb_writeReg1 && (i_ALU_src_A == `ALU_src_A_rs1);
+    wire mem_wb_forwardB = mem_wb_writeReg2 && (i_ALU_src_B == `ALU_src_B_rs2);
 
-    wire store_data_forward_ex_mem = cb_Mem_we && i_ex_mem_regd_we && (i_reg2_addr == i_ex_mem_regd_addr) && (i_ex_mem_regd_addr != `Reg0Addr);
-    wire store_data_forward_mem_wb = cb_Mem_we && i_mem_wb_regd_we && (i_reg2_addr == i_mem_wb_regd_addr) && (i_mem_wb_regd_addr != `Reg0Addr);
+    wire store_data_forward_ex_mem = ex_mem_writeReg2 && i_Mem_we;
+    wire store_data_forward_mem_wb = mem_wb_writeReg2 && i_Mem_we;
 
     // ALU input A
     reg[`DataBus] alu_SRC_A;
@@ -72,11 +93,11 @@ module EX (
             alu_SRC_A = i_mem_wb_regd_data;
         end
         else begin
-            case (cb_ALU_src_A)
-                `cb_ALU_src_A_rs1: begin
+            case (i_ALU_src_A)
+                `ALU_src_A_rs1: begin
                     alu_SRC_A = i_reg1_data;
                 end
-                `cb_ALU_src_A_pc: begin
+                `ALU_src_A_pc: begin
                     alu_SRC_A = i_pc_addr;
                 end
                 default: begin
@@ -96,14 +117,14 @@ module EX (
             alu_SRC_B = i_mem_wb_regd_data;
         end
         else begin
-            case (cb_ALU_src_B)
-                `cb_ALU_src_B_rs2: begin
+            case (i_ALU_src_B)
+                `ALU_src_B_rs2: begin
                     alu_SRC_B = i_reg2_data;
                 end
-                `cb_ALU_src_B_imm: begin
+                `ALU_src_B_imm: begin
                     alu_SRC_B = i_imm_data;
                 end
-                `cb_ALU_src_B_4: begin
+                `ALU_src_B_4: begin
                     alu_SRC_B = 32'd4;
                 end
                 default: begin
@@ -116,42 +137,124 @@ module EX (
     // equal flag
     wire equal_flag = (alu_SRC_A == alu_SRC_B);
 
+    // multiply result
+    wire signed[63:0]   mul_ss = $signed({{32{alu_SRC_A[31]}}, alu_SRC_A}) * $signed({{32{alu_SRC_B[31]}}, alu_SRC_B});
+    wire signed[63:0]   mul_su = $signed({{32{alu_SRC_A[31]}}, alu_SRC_A}) * $signed({32'b0, alu_SRC_B});
+    wire[63:0]          mul_uu = {32'b0, alu_SRC_A} * {32'b0, alu_SRC_B};
+
     // ALU Result
     reg[`DataBus] alu_result;
     always @(*) begin
-        case (cb_ALU_op)
-            `cb_ALU_op_add: begin
+        o_dividend_data     = `ZeroWord;
+        o_divisor_data      = `ZeroWord;
+        o_div_valid         = 1'b0;
+        o_div_signed        = 1'b0;
+        o_ex_division_busy  = 1'b0;
+        case (i_ALU_op)
+            `ALU_op_add: begin
                 alu_result = alu_SRC_A + alu_SRC_B;
             end
-            `cb_ALU_op_sub: begin
+            `ALU_op_sub: begin
                 alu_result = alu_SRC_A - alu_SRC_B;
             end
-            `cb_ALU_op_slt: begin
+            `ALU_op_slt: begin
                 alu_result = $signed(alu_SRC_A) < $signed(alu_SRC_B) ? 32'd1 : 32'd0;
             end
-            `cb_ALU_op_sltu: begin
+            `ALU_op_sltu: begin
                 alu_result = alu_SRC_A < alu_SRC_B ? 32'd1 : 32'd0;
             end
-            `cb_ALU_op_xor: begin
+            `ALU_op_xor: begin
                 alu_result = alu_SRC_A ^ alu_SRC_B;
             end
-            `cb_ALU_op_or: begin
+            `ALU_op_or: begin
                 alu_result = alu_SRC_A | alu_SRC_B;
             end
-            `cb_ALU_op_and: begin
+            `ALU_op_and: begin
                 alu_result = alu_SRC_A & alu_SRC_B;
             end
-            `cb_ALU_op_sll: begin
+            `ALU_op_sll: begin
                 alu_result = alu_SRC_A << alu_SRC_B[4:0];
             end
-            `cb_ALU_op_srl: begin
+            `ALU_op_srl: begin
                 alu_result = alu_SRC_A >> alu_SRC_B[4:0];
             end
-            `cb_ALU_op_sra: begin
+            `ALU_op_sra: begin
                 alu_result = $signed(alu_SRC_A) >>> alu_SRC_B[4:0];
             end
-            `cb_ALU_op_lui: begin
+            `ALU_op_lui: begin
                 alu_result = alu_SRC_B;
+            end
+            `ALU_op_mul: begin
+                alu_result = mul_ss[31:0];;
+            end
+            `ALU_op_mulh: begin
+                alu_result = mul_ss[63:32];
+            end
+            `ALU_op_mulhsu: begin
+                alu_result = mul_su[63:32];
+            end
+            `ALU_op_mulhu: begin
+                alu_result = mul_uu[63:32];
+            end
+            `ALU_op_div: begin
+                if (i_div_ready) begin
+                    o_div_valid         = 1'b0;
+                    alu_result          = i_quotient_data;
+                    o_ex_division_busy  = 1'b0;
+                end
+                else begin
+                    o_dividend_data     = alu_SRC_A;
+                    o_divisor_data      = alu_SRC_B;
+                    o_div_valid         = 1'b1;
+                    o_div_signed        = 1'b1;
+                    alu_result          = `ZeroWord;
+                    o_ex_division_busy  = 1'b1;         // pipeline stall upon division
+                end
+            end
+            `ALU_op_divu: begin
+                if (i_div_ready) begin
+                    o_div_valid         = 1'b0;
+                    alu_result          = i_quotient_data;
+                    o_ex_division_busy  = 1'b0;
+                end
+                else begin
+                    o_dividend_data     = alu_SRC_A;
+                    o_divisor_data      = alu_SRC_B;
+                    o_div_valid         = 1'b1;
+                    o_div_signed        = 1'b0;
+                    alu_result          = `ZeroWord;
+                    o_ex_division_busy  = 1'b1;
+                end
+            end
+            `ALU_op_rem: begin
+                if (i_div_ready) begin
+                    o_div_valid         = 1'b0;
+                    alu_result          = i_remainder_data;
+                    o_ex_division_busy  = 1'b0;
+                end
+                else begin
+                    o_dividend_data     = alu_SRC_A;
+                    o_divisor_data      = alu_SRC_B;
+                    o_div_valid         = 1'b1;
+                    o_div_signed        = 1'b1;
+                    alu_result          = `ZeroWord;
+                    o_ex_division_busy  = 1'b1;
+                end
+            end
+            `ALU_op_remu: begin
+                if (i_div_ready) begin
+                    o_div_valid         = 1'b0;
+                    alu_result          = i_remainder_data;
+                    o_ex_division_busy  = 1'b0;
+                end
+                else begin
+                    o_dividend_data     = alu_SRC_A;
+                    o_divisor_data      = alu_SRC_B;
+                    o_div_valid         = 1'b1;
+                    o_div_signed        = 1'b0;
+                    alu_result          = `ZeroWord;
+                    o_ex_division_busy  = 1'b1;
+                end
             end
             default: begin
                 alu_result = `ZeroWord;
@@ -161,46 +264,46 @@ module EX (
 
     // branch
     always @(*) begin
-        case (cb_Branch)
-            `cb_Branch_none: begin
+        case (i_Branch)
+            `Branch_none: begin
                 o_ex_branch = 1'b0;
                 o_jump_flag = `JumpDisable;
                 o_jump_addr = `ZeroAddr;
             end 
-            `cb_Branch_jump: begin
+            `Branch_jump: begin
                 o_ex_branch = 1'b1;
                 o_jump_flag = `JumpEnable;
                 o_jump_addr = i_pc_addr + i_imm_data;
             end 
-            `cb_Branch_reg_jump: begin
+            `Branch_reg_jump: begin
                 o_ex_branch = 1'b1;
                 o_jump_flag = `JumpEnable;
-                if (ex_mem_forwardA) begin
+                if (ex_mem_writeReg1) begin
                     o_jump_addr = (i_ex_mem_regd_data + i_imm_data) & ~32'd1;
                 end
-                else if (mem_wb_forwardA) begin
+                else if (mem_wb_writeReg1) begin
                     o_jump_addr = (i_mem_wb_regd_data + i_imm_data) & ~32'd1;
                 end
                 else begin
                     o_jump_addr = (i_reg1_data + i_imm_data) & ~32'd1;
                 end
             end 
-            `cb_Branch_jump_eq: begin
+            `Branch_jump_eq: begin
                 o_ex_branch = equal_flag ? 1'b1 : 1'b0;
                 o_jump_flag = equal_flag ? `JumpEnable : `JumpDisable;
                 o_jump_addr = i_pc_addr + i_imm_data;
             end 
-            `cb_Branch_jump_ne: begin
+            `Branch_jump_ne: begin
                 o_ex_branch = equal_flag ? 1'b0 : 1'b1;
                 o_jump_flag = equal_flag ? `JumpDisable : `JumpEnable;
                 o_jump_addr = i_pc_addr + i_imm_data;
             end 
-            `cb_Branch_jump_l: begin
+            `Branch_jump_l: begin
                 o_ex_branch = (alu_result == 1) ? 1'b1 : 1'b0;
                 o_jump_flag = (alu_result == 1) ? `JumpEnable : `JumpDisable;
                 o_jump_addr = i_pc_addr + i_imm_data;
             end 
-            `cb_Branch_jump_ge: begin
+            `Branch_jump_ge: begin
                 o_ex_branch = (alu_result == 1) ? 1'b0 : 1'b1;
                 o_jump_flag = (alu_result == 1) ? `JumpDisable : `JumpEnable;
                 o_jump_addr = i_pc_addr + i_imm_data;
@@ -214,29 +317,26 @@ module EX (
     end
 
     always @(*) begin
-        // load use
-        o_ex_load_use = (cb_MemtoReg_src == 1) && cb_Reg_we && (i_regd_addr != `Reg0Addr);
-
         o_pc_addr = i_pc_addr;
         o_inst_data = i_inst_data;
         
         // register writeback source
-        o_wb_src = cb_MemtoReg_src;
+        o_wb_src = i_MemtoReg_src;
 
         // register write
-        o_regd_we = cb_Reg_we;
+        o_regd_we = i_Reg_we;
         o_regd_addr = i_regd_addr;
         o_regd_data_alu = alu_result;
         
         // memory write
-        o_mem_we = cb_Mem_we;
-        o_mem_re = cb_Mem_re;
+        o_mem_we = i_Mem_we;
+        o_mem_re = i_Mem_re;
 
-        o_mem_op_type = cb_Mem_op;
+        o_mem_op_type = i_Mem_op;
     end
 
     always @(*) begin
-        if (cb_Mem_we) begin
+        if (i_Mem_we) begin
             o_mem_addr = alu_result;
             if (store_data_forward_ex_mem) begin
                 o_mem_wr_data_raw = i_ex_mem_regd_data;

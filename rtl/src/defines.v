@@ -1,4 +1,5 @@
-`define ZeroWord                        32'b0
+`ifndef DEFINES_V
+`define DEFINES_V
 
 // ----Address & Data----
 `define AddrBus                         31:0
@@ -6,7 +7,6 @@
 `define ZeroAddr                        32'b0
 `define ZeroWord                        32'b0
 `define ZeroHalfWord                    16'b0
-`define ZeroCtrlBundle                  17'b0
 
 `define ByteSize                        8
 `define HalfWordSize                    16
@@ -28,7 +28,10 @@
 // ----RAM----
 `define DataAddrDepth                   4096
 
-// ----Enable----
+// ----Enable/Disable----
+`define Enable                          1
+`define Disable                         0
+
 `define WriteEnable                     1
 `define WriteDisable                    0
 `define ReadEnable                      1
@@ -59,111 +62,125 @@
 `define ImmDataBus                      31:0
 
 // ----Integer Operation----
-`define U_OPCODE_LUI            7'b0110111
+`define U_OPCODE_LUI                    7'b0110111
 
-`define U_OPCODE_AUIPC          7'b0010111
+`define U_OPCODE_AUIPC                  7'b0010111
 
-`define I_OPCODE_OP_IMM         7'b0010011
-`define funct3_addi             3'b000
-`define funct3_slti             3'b010
-`define funct3_sltiu            3'b011
-`define funct3_xori             3'b100
-`define funct3_ori              3'b110
-`define funct3_andi             3'b111
-`define funct3_slli             3'b001
-`define funct3_srli_srai        3'b101
-`define funct7_digit6_srli      1'b0
-`define funct7_digit6_srai      1'b1
+`define I_OPCODE_OP_IMM                 7'b0010011
+`define funct3_addi                     3'b000
+`define funct3_slti                     3'b010
+`define funct3_sltiu                    3'b011
+`define funct3_xori                     3'b100
+`define funct3_ori                      3'b110
+`define funct3_andi                     3'b111
+`define funct3_slli                     3'b001
+`define funct3_srli_srai                3'b101
 
-`define R_OPCODE                7'b0110011
-`define funct3_add_sub          3'b000
-`define funct7_digit6_add       1'b0
-`define funct7_digit6_sub       1'b1
-`define funct3_sll              3'b001
-`define funct3_slt              3'b010
-`define funct3_sltu             3'b011
-`define funct3_xor              3'b100
-`define funct3_srl_sra          3'b101
-`define funct7_digit6_srl       1'b0
-`define funct7_digit6_sra       1'b1
-`define funct3_or               3'b110
-`define funct3_and              3'b111
+`define R_OPCODE                        7'b0110011
+`define funct3_add_sub                  3'b000
+`define funct3_sll                      3'b001
+`define funct3_slt                      3'b010
+`define funct3_sltu                     3'b011
+`define funct3_xor                      3'b100
+`define funct3_srl_sra                  3'b101
+`define funct3_or                       3'b110
+`define funct3_and                      3'b111
+
+// ----M Instructions----
+`define funct3_mul                      3'b000
+`define funct3_mulh                     3'b001
+`define funct3_mulhsu                   3'b010
+`define funct3_mulhu                    3'b011
+`define funct3_div                      3'b100
+`define funct3_divu                     3'b101
+`define funct3_rem                      3'b110
+`define funct3_remu                     3'b111
+`define funct7_mul_div                  7'b0000001
 
 // ----Control Transfer Operation----
-`define J_OPCODE_JAL            7'b1101111
+`define J_OPCODE_JAL                    7'b1101111
 
-`define J_OPCODE_JALR           7'b1100111
+`define J_OPCODE_JALR                   7'b1100111
 
-`define B_OPCODE                7'b1100011
-`define funct3_beq              3'b000
-`define funct3_bne              3'b001
-`define funct3_blt              3'b100
-`define funct3_bge              3'b101
-`define funct3_bltu             3'b110
-`define funct3_bgeu             3'b111
+`define B_OPCODE                        7'b1100011
+`define funct3_beq                      3'b000
+`define funct3_bne                      3'b001
+`define funct3_blt                      3'b100
+`define funct3_bge                      3'b101
+`define funct3_bltu                     3'b110
+`define funct3_bgeu                     3'b111
 
 // ----Memory Access Operation----
-`define I_OPCODE_LOAD           7'b0000011
-`define funct3_lb               3'b000
-`define funct3_lh               3'b001
-`define funct3_lw               3'b010
-`define funct3_lbu              3'b100
-`define funct3_lhu              3'b101
+`define I_OPCODE_LOAD                   7'b0000011
+`define funct3_lb                       3'b000
+`define funct3_lh                       3'b001
+`define funct3_lw                       3'b010
+`define funct3_lbu                      3'b100
+`define funct3_lhu                      3'b101
 
-`define S_OPCODE_STORE          7'b0100011
-`define funct3_sb               3'b000
-`define funct3_sh               3'b001
-`define funct3_sw               3'b010
+`define S_OPCODE_STORE                  7'b0100011
+`define funct3_sb                       3'b000
+`define funct3_sh                       3'b001
+`define funct3_sw                       3'b010
 
-// ----Control Bundle----
-`define CtrlBundleBus           16:0
+// ----EX Control----
 
-// input A
-`define cb_ALU_src_A_rs1        1'b0
-`define cb_ALU_src_A_pc         1'b1
+// input A      
+`define ALU_src_A_rs1                   1'b0
+`define ALU_src_A_pc                    1'b1
 
-// input B 
-`define cb_ALU_src_B_rs2        2'b00
-`define cb_ALU_src_B_imm        2'b01
-`define cb_ALU_src_B_4          2'b10
+// input B      
+`define ALU_src_B_rs2                   2'b00
+`define ALU_src_B_imm                   2'b01
+`define ALU_src_B_4                     2'b10
 
-// writeback source
-`define WB_src_ALU              1'b0
-`define WB_src_MEM              1'b1
+// writeback source     
+`define WB_src_ALU                      1'b0
+`define WB_src_MEM                      1'b1
 
 // ALU ops
-`define cb_ALU_op_add           4'b0000
-`define cb_ALU_op_sub           4'b0001
-`define cb_ALU_op_slt           4'b0010
-`define cb_ALU_op_sltu          4'b0011
-`define cb_ALU_op_xor           4'b0100
-`define cb_ALU_op_or            4'b0101
-`define cb_ALU_op_and           4'b0110
-`define cb_ALU_op_sll           4'b0111
-`define cb_ALU_op_srl           4'b1000
-`define cb_ALU_op_sra           4'b1001
-`define cb_ALU_op_lui           4'b1010
+`define ALU_op_add                      5'b00000
+`define ALU_op_sub                      5'b00001
+`define ALU_op_slt                      5'b00010
+`define ALU_op_sltu                     5'b00011
+`define ALU_op_xor                      5'b00100
+`define ALU_op_or                       5'b00101
+`define ALU_op_and                      5'b00110
+`define ALU_op_sll                      5'b00111
+`define ALU_op_srl                      5'b01000
+`define ALU_op_sra                      5'b01001
+`define ALU_op_lui                      5'b01010
+`define ALU_op_mul                      5'b01011
+`define ALU_op_mulh                     5'b01100
+`define ALU_op_mulhsu                   5'b01101
+`define ALU_op_mulhu                    5'b01110
+`define ALU_op_div                      5'b01111
+`define ALU_op_divu                     5'b10000
+`define ALU_op_rem                      5'b10001
+`define ALU_op_remu                     5'b10010
 
 // Branch Conditions
-`define cb_Branch_none          3'b000      // no jump
-`define cb_Branch_jump          3'b001      // unconditional jump to pc+imm
-`define cb_Branch_reg_jump      3'b010      // unconditional jump to reg+imm
-`define cb_Branch_jump_eq       3'b100      // conditioanl jump equal
-`define cb_Branch_jump_ne       3'b101      // conditional jump not equal
-`define cb_Branch_jump_l        3'b110      // conditional jump less than
-`define cb_Branch_jump_ge       3'b111      // conditional jump greater than
+`define Branch_none                     3'b000         // no jump
+`define Branch_jump                     3'b001         // unconditional jump to pc+imm
+`define Branch_reg_jump                 3'b010         // unconditional jump to reg+imm
+`define Branch_jump_eq                  3'b100         // conditioanl jump equal
+`define Branch_jump_ne                  3'b101         // conditional jump not equal
+`define Branch_jump_l                   3'b110         // conditional jump less than
+`define Branch_jump_ge                  3'b111         // conditional jump greater than
 
 // rd write source
-`define cb_MemtoReg_src_ALU     1'b0        // write to rd from ALU
-`define cb_MemtoReg_src_Mem     1'b1        // write to rd from data RAM
+`define MemtoReg_src_ALU                1'b0           // write to rd from ALU
+`define MemtoReg_src_Mem                1'b1           // write to rd from data RAM
 
 // memory operation length & type
-`define MemOpTypeBus            2:0
-`define cb_Mem_op_byte          3'b000      // 1 byte, signed
-`define cb_Mem_op_half          3'b001      // 2 bytes, signed
-`define cb_Mem_op_word          3'b010      // 4 bytes
-`define cb_Mem_op_ubyte         3'b100      // 1 byte, unsigned
-`define cb_Mem_op_uhalf         3'b101      // 2 bytes, unsigned
+`define MemOpTypeBus                    2:0
+`define Mem_op_byte                     3'b000         // 1 byte, signed
+`define Mem_op_half                     3'b001         // 2 bytes, signed
+`define Mem_op_word                     3'b010         // 4 bytes
+`define Mem_op_ubyte                    3'b100         // 1 byte, unsigned
+`define Mem_op_uhalf                    3'b101         // 2 bytes, unsigned
 
 // memory write strobe
-`define StrbBus                 3:0
+`define StrbBus                         3:0
+
+`endif

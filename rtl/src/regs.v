@@ -28,7 +28,7 @@ module regs (
                 regs[i] <= `ZeroWord;
             end
         end
-        else if ((i_wr_en == `WriteEnable) && (i_wr_addr != `Reg0Addr)) begin
+        else if ((i_wr_en) && (i_wr_addr != `Reg0Addr)) begin
             regs[i_wr_addr] <= i_wr_data;
         end
     end
@@ -36,26 +36,26 @@ module regs (
     // read reg1
     always @(*) begin
         if (i_rd_addr1 == `Reg0Addr) begin
-            o_rd_data1 <= `ZeroWord;
+            o_rd_data1 = `ZeroWord;
         end
-        else if ((i_wr_en == `WriteEnable) && (i_rd_addr1 == i_wr_addr)) begin
-            o_rd_data1 <= i_wr_data;
+        else if ((i_wr_en) && (i_rd_addr1 == i_wr_addr)) begin
+            o_rd_data1 = i_wr_data;
         end
         else begin
-            o_rd_data1 <= regs[i_rd_addr1];
+            o_rd_data1 = regs[i_rd_addr1];
         end
     end
 
     // read reg2
     always @(*) begin
         if (i_rd_addr2 == `Reg0Addr) begin
-            o_rd_data2 <= `ZeroWord;
+            o_rd_data2 = `ZeroWord;
         end
-        else if ((i_wr_en == `WriteEnable) && (i_rd_addr2 == i_wr_addr)) begin
-            o_rd_data2 <= i_wr_data;
+        else if ((i_wr_en) && (i_rd_addr2 == i_wr_addr)) begin
+            o_rd_data2 = i_wr_data;
         end
         else begin
-            o_rd_data2 <= regs[i_rd_addr2];
+            o_rd_data2 = regs[i_rd_addr2];
         end
     end
 

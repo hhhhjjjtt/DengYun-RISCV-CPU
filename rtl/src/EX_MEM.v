@@ -33,7 +33,7 @@ module EX_MEM (
     output reg[`DataBus]        o_mem_wr_data_raw,
     output reg[`MemOpTypeBus]   o_mem_op_type,
 
-    // forwarding to ex
+    // forward to ex
     output reg                  o_ex_mem_regd_we,
     output reg[`RegsAddrBus]    o_ex_mem_regd_addr,
     output reg[`DataBus]        o_ex_mem_regd_data
@@ -51,7 +51,7 @@ module EX_MEM (
             o_mem_re            <= `ReadDisable;
             o_mem_addr          <= `ZeroAddr;
             o_mem_wr_data_raw   <= `ZeroWord;
-            o_mem_op_type       <= `cb_Mem_op_word;
+            o_mem_op_type       <= `Mem_op_word;
             o_ex_mem_regd_we    <= `WriteDisable;
             o_ex_mem_regd_addr  <= `Reg0Addr;
             o_ex_mem_regd_data  <= `ZeroWord;
@@ -70,7 +70,7 @@ module EX_MEM (
                     o_mem_addr          <= i_mem_addr;
                     o_mem_wr_data_raw   <= i_mem_wr_data_raw;
                     o_mem_op_type       <= i_mem_op_type;
-                    o_ex_mem_regd_we    <= i_regd_we;
+                    o_ex_mem_regd_we    <= i_regd_we && (i_wb_src == `WB_src_ALU);
                     o_ex_mem_regd_addr  <= i_regd_addr;
                     o_ex_mem_regd_data  <= i_regd_data_alu;
                 end
@@ -101,7 +101,7 @@ module EX_MEM (
                     o_mem_re            <= `ReadDisable;
                     o_mem_addr          <= `ZeroAddr;
                     o_mem_wr_data_raw   <= `ZeroWord;
-                    o_mem_op_type       <= `cb_Mem_op_word;
+                    o_mem_op_type       <= `Mem_op_word;
                     o_ex_mem_regd_we    <= `WriteDisable;
                     o_ex_mem_regd_addr  <= `Reg0Addr;
                     o_ex_mem_regd_data  <= `ZeroWord;
@@ -118,7 +118,7 @@ module EX_MEM (
                     o_mem_addr          <= i_mem_addr;
                     o_mem_wr_data_raw   <= i_mem_wr_data_raw;
                     o_mem_op_type       <= i_mem_op_type;
-                    o_ex_mem_regd_we    <= i_regd_we;
+                    o_ex_mem_regd_we    <= i_regd_we && (i_wb_src == `WB_src_ALU);
                     o_ex_mem_regd_addr  <= i_regd_addr;
                     o_ex_mem_regd_data  <= i_regd_data_alu;
                 end
