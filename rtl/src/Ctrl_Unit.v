@@ -1,6 +1,6 @@
 `include "defines.v"
 
-module ctrl (
+module Ctrl_Unit (
     // from if
     input wire                      i_if_stall,
 
@@ -34,59 +34,33 @@ module ctrl (
         o_id_ex_ctrl    = `ctrl_none;
         o_ex_mem_ctrl   = `ctrl_none;
         o_mem_wb_ctrl   = `ctrl_none;
-        o_jump_flag     = `JumpDisable;
-        o_jump_addr     = `ZeroAddr;
-        if (i_mem_stall) begin              // pipeline stall due to data memory access
+        o_jump_flag     = i_jump_flag;
+        o_jump_addr     = i_jump_addr;
+        if (i_mem_stall || i_if_stall) begin    // full pipeline stall due to instruction/data memory wait
             o_pc_ctrl       = `ctrl_stall;
-            o_jump_flag     = `JumpDisable;
-            o_jump_addr     = `ZeroAddr;
             o_if_id_ctrl    = `ctrl_stall;
             o_id_ex_ctrl    = `ctrl_stall;
             o_ex_mem_ctrl   = `ctrl_stall;
-            o_mem_wb_ctrl   = `ctrl_flush;
+            o_mem_wb_ctrl   = `ctrl_stall;
         end
         else if (i_ex_division_busy) begin
             o_pc_ctrl       = `ctrl_stall;
-            o_jump_flag     = `JumpDisable;
-            o_jump_addr     = `ZeroAddr;
             o_if_id_ctrl    = `ctrl_stall;
             o_id_ex_ctrl    = `ctrl_stall;
             o_ex_mem_ctrl   = `ctrl_flush;
             o_mem_wb_ctrl   = `ctrl_none;
         end
-        else if (i_ex_branch) begin         // pipeline flush due to branch
+        else if (i_ex_branch) begin             // pipeline flush due to branch
             o_pc_ctrl       = `ctrl_none;
-            o_jump_flag     = i_jump_flag;
-            o_jump_addr     = i_jump_addr;
             o_if_id_ctrl    = `ctrl_flush;
             o_id_ex_ctrl    = `ctrl_flush;
             o_ex_mem_ctrl   = `ctrl_none;
             o_mem_wb_ctrl   = `ctrl_none;
         end
-        else if (i_id_load_use) begin       // pipeline stall due to load instructions
+        else if (i_id_load_use) begin           // pipeline stall due to load instructions
             o_pc_ctrl       = `ctrl_stall;
-            o_jump_flag     = `JumpDisable;
-            o_jump_addr     = `ZeroAddr;
             o_if_id_ctrl    = `ctrl_stall;
             o_id_ex_ctrl    = `ctrl_flush;
-            o_ex_mem_ctrl   = `ctrl_none;
-            o_mem_wb_ctrl   = `ctrl_none;
-        end
-        else if (i_if_stall) begin          // pipeline stall due to instruction memory access
-            o_pc_ctrl       = `ctrl_stall;
-            o_jump_flag     = `JumpDisable;
-            o_jump_addr     = `ZeroAddr;
-            o_if_id_ctrl    = `ctrl_stall;
-            o_id_ex_ctrl    = `ctrl_flush;
-            o_ex_mem_ctrl   = `ctrl_none;
-            o_mem_wb_ctrl   = `ctrl_none;
-        end
-        else begin
-            o_pc_ctrl       = `ctrl_none;
-            o_jump_flag     = `JumpDisable;
-            o_jump_addr     = `ZeroAddr;
-            o_if_id_ctrl    = `ctrl_none;
-            o_id_ex_ctrl    = `ctrl_none;
             o_ex_mem_ctrl   = `ctrl_none;
             o_mem_wb_ctrl   = `ctrl_none;
         end

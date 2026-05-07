@@ -1,6 +1,6 @@
 `include "defines.v"
 
-module regs (
+module Regs (
     input wire                  i_Clk,
     input wire                  i_reset,
 

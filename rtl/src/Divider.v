@@ -4,6 +4,9 @@ module Divider (
     input wire                  i_Clk,
     input wire                  i_reset,
 
+    // from ctrl
+    input wire                  i_div_result_accept,
+
     // I/O with EX
     input wire[`DataBus]        i_dividend_data,
     input wire[`DataBus]        i_divisor_data,
@@ -151,13 +154,12 @@ module Divider (
                     end
                 end
 
-                // Once i_div_valid goes low, return to IDLE.
                 S_DONE: begin
                     o_div_ready <= 1'b1;
 
-                    if (!i_div_valid) begin
-                        o_div_ready     <= 1'b0;
-                        r_state         <= S_IDLE;
+                    if (i_div_result_accept) begin
+                        o_div_ready <= 1'b0;
+                        r_state     <= S_IDLE;
                     end
                 end
 
