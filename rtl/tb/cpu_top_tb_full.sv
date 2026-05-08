@@ -88,6 +88,22 @@ module cpu_top_tb_02 ();
         run_riscv_test();
         testcase = "xori";
         run_riscv_test();
+        testcase = "div";
+        run_riscv_test();
+        testcase = "divu";
+        run_riscv_test();
+        testcase = "mul";
+        run_riscv_test();
+        testcase = "mulh";
+        run_riscv_test();
+        testcase = "mulhsu";
+        run_riscv_test();
+        testcase = "mulhu";
+        run_riscv_test();
+        testcase = "rem";
+        run_riscv_test();
+        testcase = "remu";
+        run_riscv_test();
     end
 
     task step;

@@ -3,7 +3,7 @@
 module cpu_top_tb ();
 
     localparam CLK_PERIOD       = 20;
-    localparam SIMULATION_END   = 10000;
+    localparam SIMULATION_END   = 20000;
 
     reg r_Clk;
     reg r_reset;
@@ -36,7 +36,7 @@ module cpu_top_tb ();
     initial begin
         wait (
             cpu_top_0.Regs_0.regs[0]  == 32'h00000000 &&
-            cpu_top_0.Regs_0.regs[1]  == 32'h000002fc &&
+            cpu_top_0.Regs_0.regs[1]  == 32'h0000040c &&
             cpu_top_0.Regs_0.regs[2]  == 32'h00000002 &&
             cpu_top_0.Regs_0.regs[3]  == 32'h00000003 &&
             cpu_top_0.Regs_0.regs[4]  == 32'h00000004 &&

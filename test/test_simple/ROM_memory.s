@@ -156,6 +156,138 @@ test_load_store:
 
 
 
+test_rv32m:
+    add  x31, x1, x0       # save return address
+
+    # ------------------------------------------------------------
+    # Basic MUL test: 7 * 3 = 21
+    # ------------------------------------------------------------
+    addi x2,  x0, 7
+    addi x3,  x0, 3
+    mul  x4,  x2, x3
+    addi x5,  x0, 21
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # MULH signed: (-7) * 3 = -21
+    # high 32 bits should be 0xffffffff
+    # ------------------------------------------------------------
+    sub  x2,  x0, x2       # x2 = -7
+    mulh x4,  x2, x3
+    addi x5,  x0, -1
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # MULHU unsigned: 0xffffffff * 2
+    # full result = 0x00000001fffffffe
+    # high 32 bits = 1
+    # ------------------------------------------------------------
+    addi x2,  x0, -1       # x2 = 0xffffffff
+    addi x3,  x0, 2
+    mulhu x4, x2, x3
+    addi x5,  x0, 1
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # MULHSU: signed(-2) * unsigned(3) = -6
+    # high 32 bits should be 0xffffffff
+    # ------------------------------------------------------------
+    addi x2,  x0, -2
+    addi x3,  x0, 3
+    mulhsu x4, x2, x3
+    addi x5,  x0, -1
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # DIV signed: 7 / 3 = 2
+    # REM signed: 7 % 3 = 1
+    # ------------------------------------------------------------
+    addi x2,  x0, 7
+    addi x3,  x0, 3
+
+    div  x4,  x2, x3
+    addi x5,  x0, 2
+    bne  x4,  x5, failed
+
+    rem  x4,  x2, x3
+    addi x5,  x0, 1
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # DIV signed negative: -7 / 3 = -2
+    # REM signed negative: -7 % 3 = -1
+    # RISC-V division truncates toward zero.
+    # ------------------------------------------------------------
+    addi x2,  x0, -7
+    addi x3,  x0, 3
+
+    div  x4,  x2, x3
+    addi x5,  x0, -2
+    bne  x4,  x5, failed
+
+    rem  x4,  x2, x3
+    addi x5,  x0, -1
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # DIVU unsigned: 7 / 3 = 2
+    # REMU unsigned: 7 % 3 = 1
+    # ------------------------------------------------------------
+    addi x2,  x0, 7
+    addi x3,  x0, 3
+
+    divu x4,  x2, x3
+    addi x5,  x0, 2
+    bne  x4,  x5, failed
+
+    remu x4,  x2, x3
+    addi x5,  x0, 1
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # Divide by zero behavior
+    # DIV/DIVU result should be -1 / 0xffffffff.
+    # REM/REMU result should be the dividend.
+    # ------------------------------------------------------------
+    addi x2,  x0, 7
+    addi x3,  x0, 0
+
+    div  x4,  x2, x3
+    addi x5,  x0, -1
+    bne  x4,  x5, failed
+
+    divu x4,  x2, x3
+    addi x5,  x0, -1
+    bne  x4,  x5, failed
+
+    rem  x4,  x2, x3
+    addi x5,  x0, 7
+    bne  x4,  x5, failed
+
+    remu x4,  x2, x3
+    addi x5,  x0, 7
+    bne  x4,  x5, failed
+
+    # ------------------------------------------------------------
+    # Signed overflow case:
+    # INT_MIN / -1 should return INT_MIN.
+    # INT_MIN % -1 should return 0.
+    # ------------------------------------------------------------
+    addi x2,  x0, 1
+    slli x2,  x2, 31       # x2 = 0x80000000
+    addi x3,  x0, -1
+
+    div  x4,  x2, x3
+    bne  x4,  x2, failed
+
+    rem  x4,  x2, x3
+    bne  x4,  x0, failed
+
+    add  x1,  x31, x0      # restore return address
+    jalr x0, 0(x1)
+
+
+
 test_branch:
     addi x31, x0, 2
     slli x31, x31, 12      # x31 = 0x2000
@@ -268,6 +400,7 @@ done:
     jalr x0, 0(x1)
 
 main:
+    jal x1, test_rv32m
     jal x1, load_register_values
     jal x1, test_load_store
     jal x1, test_branch
