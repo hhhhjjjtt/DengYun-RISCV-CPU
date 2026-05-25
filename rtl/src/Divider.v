@@ -4,7 +4,7 @@ module Divider (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from ctrl
+    // from Ctrl_Unit
     input wire                  i_div_result_accept,
 
     // I/O with EX

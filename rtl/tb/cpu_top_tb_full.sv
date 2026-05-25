@@ -1,16 +1,20 @@
 `timescale 1ns/1ps
 
-module cpu_top_tb_02 ();
+module cpu_top_tb_full ();
 
     localparam CLK_PERIOD       = 20;
     localparam SIMULATION_END   = 10000;
 
     reg r_Clk;
     reg r_reset;
+    reg r_timer_int_pending;
+    reg r_external_int_pending;
 
     cpu_top cpu_top_0 (
-        .i_Clk  (r_Clk),
-        .i_reset(r_reset)
+        .i_Clk                  (r_Clk),
+        .i_reset                (r_reset),
+        .i_timer_int_pending    (r_timer_int_pending),
+        .i_external_int_pending (r_external_int_pending)
     );
 
     string  testcase;
@@ -103,6 +107,12 @@ module cpu_top_tb_02 ();
         testcase = "rem";
         run_riscv_test();
         testcase = "remu";
+        run_riscv_test();
+        testcase = "csr";
+        run_riscv_test();
+        testcase = "ebreak";
+        run_riscv_test();
+        testcase = "ecall";
         run_riscv_test();
     end
 

@@ -1,24 +1,26 @@
 `include "defines.v"
 
 module ID (
-    // from if_id
+    // from IF_ID
     input wire[`InstAddrBus]    i_pc_addr,          // pc address
     input wire[`DataBus]        i_inst_data,        // instruction at pc
 
-    // from regs
+    // I/O with Regs
     input wire[`DataBus]        i_reg1_rd_data,     // data fetched from reg1
     input wire[`DataBus]        i_reg2_rd_data,     // data fetched from reg2
-    
-    // forward from id_ex
+    output reg[`RegsAddrBus]    o_reg1_rd_addr,     // address to fetch from reg1
+    output reg[`RegsAddrBus]    o_reg2_rd_addr,     // address to fetch from reg2
+
+    // I/O with Regs_CSR
+	input wire[`DataBus]        i_csr_rd_data,
+    output reg[`CSRAddrBus]     o_csr_rd_addr,
+
+    // forward from ID_EX
     input wire                  i_id_ex_Mem_re,
     input wire                  i_id_ex_Reg_we,
     input wire[`RegsAddrBus]    i_id_ex_regd_addr,
 
-    // to regs
-    output reg[`RegsAddrBus]    o_reg1_rd_addr,     // address to fetch from reg1
-    output reg[`RegsAddrBus]    o_reg2_rd_addr,     // address to fetch from reg2
-
-    // to id_ex
+    // to ID_EX
     output reg[`InstAddrBus]    o_pc_addr,          // pc address
     output reg[`DataBus]        o_inst_data,        // instruction at pc
     output reg[`DataBus]        o_reg1_data,        // data fetched from reg1
@@ -38,7 +40,15 @@ module ID (
     output reg                  o_Mem_re,           // whether to read from data ram
     output reg[2:0]             o_Mem_op,           // memory operation length & type
 
-    // to ctrl
+    output reg[2:0]             o_csr_op,
+    output reg                  o_csr_wr_en,
+	output reg[`CSRAddrBus]     o_csr_wr_addr,
+    output reg[`DataBus]        o_csr_data,
+    output reg[`DataBus]        o_csr_zimm_data,
+
+    output reg[`TrapCauseBus]   o_trap_cause,
+
+    // to Ctrl_Unit
     output reg                  o_id_load_use
 );
     
@@ -49,6 +59,14 @@ module ID (
     wire[4:0] rd        = i_inst_data[11:7];
     wire[4:0] rs1       = i_inst_data[19:15];
     wire[4:0] rs2       = i_inst_data[24:20];
+
+    // csr instruction segmentation
+    wire is_system = (opcode == `OPCODE_SYSTEM);
+    wire is_csr_inst      = is_system && (funct3 != 3'b000);
+    wire is_csr_reg_inst  = is_csr_inst && (funct3[2] == 1'b0);
+    wire[11:0] csr_addr = i_inst_data[31:20];
+    wire[4:0]  csr_zimm = i_inst_data[19:15];
+    wire[`DataBus] csr_zimm_data    = {27'b0, csr_zimm};
 
     // immediate generator
     wire[`ImmDataBus] immI = {{20{i_inst_data[31]}}, i_inst_data[31:20]};
@@ -68,10 +86,11 @@ module ID (
         endcase
     end
 
-    // output logic
     always @(*) begin
         o_reg1_rd_addr      = rs1;
         o_reg2_rd_addr      = rs2;
+        
+        o_csr_rd_addr       = csr_addr;
         o_inst_data         = i_inst_data;
         o_pc_addr           = i_pc_addr;
         o_reg1_data         = i_reg1_rd_data;
@@ -80,7 +99,48 @@ module ID (
         o_reg2_addr         = rs2;
         o_regd_addr         = rd;
         o_imm_data          = imm;
+
+        o_csr_wr_addr       = csr_addr;
+        o_csr_data          = i_csr_rd_data;
+        o_csr_zimm_data     = csr_zimm_data;
+        o_csr_op            = funct3;
+    end
+
+    // output logic
+    always @(*) begin
+        o_Reg_we        = `Disable;
+        o_ALU_src_A     = `ALU_src_A_rs1;
+        o_ALU_src_B     = `ALU_src_B_imm;
+        o_ALU_op        = `ALU_op_add;
+        o_Branch        = `Branch_none;
+        o_MemtoReg_src  = `MemtoReg_src_ALU;
+        o_Mem_we        = `Disable;
+        o_Mem_re        = `Disable;
+        o_Mem_op        = `Mem_op_word;
+        o_csr_wr_en     = `Disable;
+        o_trap_cause    = `trap_none;
         case (opcode)
+            `OPCODE_SYSTEM: begin
+                o_ALU_src_A     = `ALU_src_A_rs1;   // don't care
+                o_ALU_src_B     = `ALU_src_B_imm;   // don't care
+                o_ALU_op        = `ALU_op_add;      // don't care
+                o_Branch        = `Branch_none;
+                o_MemtoReg_src  = `MemtoReg_src_ALU;
+                o_Mem_we        = `Disable;
+                o_Mem_re        = `Disable;
+                o_Mem_op        = `Mem_op_word;
+                if (funct3 != 3'b000) begin
+                    o_Reg_we    = `Enable;
+                    o_csr_wr_en = `Enable;
+                end else begin
+                    case (i_inst_data[31:20])
+                        `funct12_ecall:  o_trap_cause = `trap_ecall;
+                        `funct12_ebreak: o_trap_cause = `trap_ebreak;
+                        `funct12_mret:   o_trap_cause = `trap_mret;
+                        default:         o_trap_cause = `trap_none;
+                    endcase
+                end
+            end
             `U_OPCODE_LUI: begin        // LUI, U-type
                 o_Reg_we        = `Enable;
                 o_ALU_src_A     = `ALU_src_A_rs1;    // don't care
@@ -349,7 +409,8 @@ module ID (
                 (opcode == `I_OPCODE_LOAD) ||
                 (opcode == `S_OPCODE_STORE) ||
                 (opcode == `B_OPCODE) ||
-                (opcode == `J_OPCODE_JALR);
+                (opcode == `J_OPCODE_JALR) ||
+                is_csr_reg_inst;
     wire uses_rs2 = (opcode == `R_OPCODE) ||
                 (opcode == `S_OPCODE_STORE) ||
                 (opcode == `B_OPCODE);

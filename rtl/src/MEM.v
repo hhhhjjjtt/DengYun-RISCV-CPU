@@ -1,13 +1,13 @@
 `include "defines.v"
 
 module MEM (
-    // from ex_mem
+    // from EX_MEM
     input wire[`InstAddrBus]    i_pc_addr,
     input wire[`DataBus]        i_inst_data,
     input wire                  i_wb_src,
     input wire                  i_regd_we,
     input wire[`RegsAddrBus]    i_regd_addr,
-    input wire[`DataBus]        i_regd_data_alu,
+    input wire[`DataBus]        i_regd_data,
     input wire                  i_mem_we,
     input wire                  i_mem_re,
     input wire[`DataAddrBus]    i_mem_addr,
@@ -27,10 +27,10 @@ module MEM (
     output reg[`DataAddrBus]    o_dmem_wr_addr_raw,     // write address
     output reg[`DataBus]        o_dmem_wr_data,         // write data
 
-    // to ctrl 
+    // to Ctrl_Unit 
     output reg                  o_mem_stall,
     
-    // to mem_wb
+    // to MEM_WB
     output reg                  o_regd_we,
     output reg[`RegsAddrBus]    o_regd_addr,
     output reg[`DataBus]        o_regd_data
@@ -63,7 +63,7 @@ module MEM (
 
         o_regd_we           = i_regd_we;
         o_regd_addr         = i_regd_addr;
-        o_regd_data         = i_regd_data_alu;      
+        o_regd_data         = i_regd_data;
 
         if (i_mem_we) begin
             case (i_mem_op_type)

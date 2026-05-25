@@ -1,12 +1,12 @@
 `include "defines.v"
 
 module WB (
-    // from mem_wb
+    // from MEM_WB
     input wire                  i_regd_we,
     input wire[`RegsAddrBus]    i_regd_addr,
     input wire[`DataBus]        i_regd_data,
 
-    // to regs
+    // to Regs
     output reg                  o_regd_we,
     output reg[`RegsAddrBus]    o_regd_addr,
     output reg[`DataBus]        o_regd_data

@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module cpu_top_tb ();
+module cpu_top_tb_simple ();
 
     localparam CLK_PERIOD       = 20;
     localparam SIMULATION_END   = 20000;

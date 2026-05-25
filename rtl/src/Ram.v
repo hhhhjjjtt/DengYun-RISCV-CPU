@@ -4,17 +4,17 @@ module Ram (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from ctrl
+    // from Ctrl_Unit
     input wire                  i_dmem_resp_accept,
 
-    // I/O with mem
+    // I/O with MEM
     input wire                  i_dmem_valid,
     output reg                  o_dmem_ready,
-    // I/O with mem, read
+    // I/O with MEM, read
     input wire                  i_dmem_rd_en,
     input wire[`DataAddrBus]    i_dmem_rd_addr,
     output reg[`DataBus]        o_dmem_rd_data,
-    // I/O with mem, write
+    // I/O with MEM, write
     input wire                  i_dmem_wr_en,       // write enable
     input wire[`StrbBus]        i_dmem_wr_strb,     // write strobe
     input wire[`DataAddrBus]    i_dmem_wr_addr,     // write address

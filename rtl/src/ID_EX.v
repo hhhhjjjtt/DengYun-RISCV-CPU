@@ -4,7 +4,7 @@ module ID_EX (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from id
+    // from ID_EX
     input wire[`InstAddrBus]    i_pc_addr,    
     input wire[`DataBus]        i_inst_data,  
     input wire[`DataBus]        i_reg1_data,  
@@ -24,10 +24,18 @@ module ID_EX (
     input wire                  i_Mem_re,
     input wire[2:0]             i_Mem_op,
 
-    // from ctrl
+    input wire[2:0]             i_csr_op,
+    input wire                  i_csr_wr_en,
+	input wire[`CSRAddrBus]     i_csr_wr_addr,
+    input wire[`DataBus]        i_csr_data,
+    input wire[`DataBus]        i_csr_zimm_data,
+
+    input wire[`TrapCauseBus]   i_trap_cause,
+
+    // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_ctrl_flag,
 
-    // to ex
+    // to EX
     output reg[`InstAddrBus]    o_pc_addr,    
     output reg[`DataBus]        o_inst_data,  
     output reg[`DataBus]        o_reg1_data,  
@@ -47,7 +55,15 @@ module ID_EX (
     output reg                  o_Mem_re,
     output reg[2:0]             o_Mem_op,
 
-    // forward to id
+    output reg[2:0]             o_csr_op,
+    output reg                  o_csr_wr_en,
+	output reg[`CSRAddrBus]     o_csr_wr_addr,
+    output reg[`DataBus]        o_csr_data,
+    output reg[`DataBus]        o_csr_zimm_data,
+
+    output reg[`TrapCauseBus]   o_trap_cause,
+
+    // forward to ID
     output reg                  o_id_ex_Mem_re,
     output reg                  o_id_ex_Reg_we,
     output reg[`RegsAddrBus]    o_id_ex_regd_addr
@@ -73,6 +89,13 @@ module ID_EX (
             o_Mem_we            <= `Disable;
             o_Mem_re            <= `Disable;
             o_Mem_op            <= `Mem_op_word;
+
+            o_csr_op            <= 3'b000;
+            o_csr_wr_en         <= `Disable;
+            o_csr_wr_addr       <= `Reg0Addr;
+            o_csr_data          <= `ZeroWord;
+            o_csr_zimm_data     <= `ZeroWord;
+            o_trap_cause        <= `trap_none;
 
             o_id_ex_Mem_re      <= `Disable;
             o_id_ex_Reg_we      <= `Disable;
@@ -100,6 +123,13 @@ module ID_EX (
                     o_Mem_re            <= i_Mem_re;
                     o_Mem_op            <= i_Mem_op;
 
+                    o_csr_op            <= i_csr_op;
+                    o_csr_wr_en         <= i_csr_wr_en;
+                    o_csr_wr_addr       <= i_csr_wr_addr;
+                    o_csr_data          <= i_csr_data;
+                    o_csr_zimm_data     <= i_csr_zimm_data;
+                    o_trap_cause        <= i_trap_cause;
+
                     o_id_ex_Mem_re      <= i_Mem_re;
                     o_id_ex_Reg_we      <= i_Reg_we;
                     o_id_ex_regd_addr   <= i_regd_addr;
@@ -123,6 +153,13 @@ module ID_EX (
                     o_Mem_we            <= o_Mem_we;
                     o_Mem_re            <= o_Mem_re;
                     o_Mem_op            <= o_Mem_op;
+
+                    o_csr_op            <= o_csr_op;
+                    o_csr_wr_en         <= o_csr_wr_en;
+                    o_csr_wr_addr       <= o_csr_wr_addr;
+                    o_csr_data          <= o_csr_data;
+                    o_csr_zimm_data     <= o_csr_zimm_data;
+                    o_trap_cause        <= o_trap_cause;
 
                     o_id_ex_Mem_re      <= o_id_ex_Mem_re;
                     o_id_ex_Reg_we      <= o_id_ex_Reg_we;
@@ -148,6 +185,13 @@ module ID_EX (
                     o_Mem_re            <= `Disable;
                     o_Mem_op            <= `Mem_op_word;
 
+                    o_csr_op            <= 3'b000;
+                    o_csr_wr_en         <= `Disable;
+                    o_csr_wr_addr       <= `Reg0Addr;
+                    o_csr_data          <= `ZeroWord;
+                    o_csr_zimm_data     <= `ZeroWord;
+                    o_trap_cause        <= `trap_none;
+
                     o_id_ex_Mem_re      <= `Disable;
                     o_id_ex_Reg_we      <= `Disable;
                     o_id_ex_regd_addr   <= `Reg0Addr;
@@ -171,6 +215,13 @@ module ID_EX (
                     o_Mem_we            <= i_Mem_we;
                     o_Mem_re            <= i_Mem_re;
                     o_Mem_op            <= i_Mem_op;
+
+                    o_csr_op            <= i_csr_op;
+                    o_csr_wr_en         <= i_csr_wr_en;
+                    o_csr_wr_addr       <= i_csr_wr_addr;
+                    o_csr_data          <= i_csr_data;
+                    o_csr_zimm_data     <= i_csr_zimm_data;
+                    o_trap_cause        <= i_trap_cause;
 
                     o_id_ex_Mem_re      <= i_Mem_re;
                     o_id_ex_Reg_we      <= i_Reg_we;

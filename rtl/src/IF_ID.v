@@ -4,14 +4,14 @@ module IF_ID (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from if
+    // from IF
     input wire[`InstAddrBus]    i_pc_addr,
     input wire[`DataBus]        i_inst_data,
 
-    // from ctrl
+    // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_ctrl_flag,
 
-    // to id
+    // to ID
     output reg[`InstAddrBus]    o_pc_addr,
     output reg[`DataBus]        o_inst_data
 );

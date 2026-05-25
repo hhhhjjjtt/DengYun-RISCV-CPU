@@ -123,6 +123,16 @@
 `define funct3_sh                       3'b001
 `define funct3_sw                       3'b010
 
+// ----System----
+`define OPCODE_SYSTEM                   7'b1110011
+`define funct3_csrrw                    3'b001
+`define funct3_csrrs                    3'b010
+`define funct3_csrrc                    3'b011
+`define funct3_csrrwi                   3'b101
+`define funct3_csrrsi                   3'b110
+`define funct3_csrrci                   3'b111
+
+
 // ----EX Control----
 
 // input A      
@@ -182,5 +192,35 @@
 
 // memory write strobe
 `define StrbBus                         3:0
+
+// ----Trap Cause----
+`define TrapCauseBus                    1:0
+`define trap_none                       2'b00
+`define trap_ecall                      2'b01
+`define trap_ebreak                     2'b10
+`define trap_mret                       2'b11
+
+// ----SYSTEM funct12----
+`define funct12_ecall                   12'h000
+`define funct12_ebreak                  12'h001
+`define funct12_mret                    12'h302
+
+// ----mstatus bit masks----
+`define MSTATUS_MIE                     32'h00000008   // bit 3
+`define MSTATUS_MPIE                    32'h00000080   // bit 7
+`define MSTATUS_MPP                     32'h00001800   // bits 12:11
+`define MSTATUS_CLEAR                   32'h00001888   // MIE | MPIE | MPP
+
+// ----CSR Address----
+`define CSRAddrBus                      11:0
+
+`define CSR_CYCLE                       12'hC00
+`define CSR_CYCLEH                      12'hC80
+`define CSR_MSTATUS                     12'h300
+`define CSR_MIE                         12'h304
+`define CSR_MTVEC                       12'h305
+`define CSR_MSCRATCH                    12'h340
+`define CSR_MEPC                        12'h341
+`define CSR_MCAUSE                      12'h342
 
 `endif

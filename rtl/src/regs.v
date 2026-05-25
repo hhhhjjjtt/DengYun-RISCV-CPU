@@ -4,16 +4,16 @@ module Regs (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from wb
+    // from WB
     input wire                  i_wr_en,        // write enable
     input wire[`RegsAddrBus]    i_wr_addr,      // write addr 1
     input wire[`DataBus]        i_wr_data,      // write data
 
-    // from id
+    // from ID
     input wire[`RegsAddrBus]    i_rd_addr1,     // read addr 1
     input wire[`RegsAddrBus]    i_rd_addr2,     // read addr 2
 
-    // to id 
+    // to ID
     output reg[`DataBus]        o_rd_data1,     // read data 1
     output reg[`DataBus]        o_rd_data2      // read data 2    
 );

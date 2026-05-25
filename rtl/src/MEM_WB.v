@@ -4,20 +4,20 @@ module MEM_WB (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from mem
+    // from MEM
     input wire                  i_regd_we,
     input wire[`RegsAddrBus]    i_regd_addr,
     input wire[`DataBus]        i_regd_data,
 
-    // from ctrl
+    // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_mem_wb_ctrl,
 
-    // to wb
+    // to WB
     output reg                  o_regd_we,
     output reg[`RegsAddrBus]    o_regd_addr,
     output reg[`DataBus]        o_regd_data,
 
-    // forward to ex
+    // forward to EX
     output reg                  o_mem_wb_regd_we,
     output reg[`RegsAddrBus]    o_mem_wb_regd_addr,
     output reg[`DataBus]        o_mem_wb_regd_data

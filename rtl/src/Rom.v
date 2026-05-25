@@ -4,13 +4,13 @@ module Rom (
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // from ctrl
+    // from Ctrl_Unit
     input wire                  i_imem_resp_accept,
 
-    // I/O with if
+    // I/O with IF
     input wire                  i_imem_valid,
     output reg                  o_imem_ready,
-    // I/O with if, read
+    // I/O with IF, read
     input wire                  i_imem_rd_en,
     input wire[`InstAddrBus]    i_imem_rd_addr,
     output reg[`DataBus]        o_imem_rd_data

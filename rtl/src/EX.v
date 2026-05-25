@@ -1,7 +1,7 @@
 `include "defines.v"
 
 module EX (    
-    // from id_ex
+    // from ID_EX
     input wire[`InstAddrBus]    i_pc_addr,
     input wire[`DataBus]        i_inst_data,
     input wire[`DataBus]        i_reg1_data,
@@ -21,12 +21,18 @@ module EX (
     input wire                  i_Mem_re,
     input wire[2:0]             i_Mem_op,
 
-    // forward from ex_mem
+    input wire[2:0]             i_csr_op,
+    input wire                  i_csr_wr_en,
+	input wire[`CSRAddrBus]     i_csr_wr_addr,
+    input wire[`DataBus]        i_csr_data,
+    input wire[`DataBus]        i_csr_zimm_data,
+
+    // forward from EX_MEM
     input wire                  i_ex_mem_regd_we,
     input wire[`RegsAddrBus]    i_ex_mem_regd_addr,
     input wire[`DataBus]        i_ex_mem_regd_data,
     
-    // forward from mem_wb
+    // forward from MEM_WB
     input wire                  i_mem_wb_regd_we,
     input wire[`RegsAddrBus]    i_mem_wb_regd_addr,
     input wire[`DataBus]        i_mem_wb_regd_data,
@@ -40,20 +46,25 @@ module EX (
     output reg                  o_div_valid,        // division instruction vallid
     output reg                  o_div_signed,
 
-    // to ex_mem
+    // to Regs_CSR
+    output reg                  o_csr_wr_en,
+	output reg[`CSRAddrBus]     o_csr_wr_addr,
+	output reg[`DataBus]        o_csr_wr_data,
+
+    // to EX_MEM
     output reg[`InstAddrBus]    o_pc_addr,
     output reg[`DataBus]        o_inst_data,
     output reg                  o_wb_src,       // which source to write to the destination register, from memory(1) or ALU(0)
     output reg                  o_regd_we,
     output reg[`RegsAddrBus]    o_regd_addr,
-    output reg[`DataBus]        o_regd_data_alu,
+    output reg[`DataBus]        o_regd_data,
     output reg                  o_mem_we,
     output reg                  o_mem_re,
     output reg[`DataAddrBus]    o_mem_addr,
     output reg[`DataBus]        o_mem_wr_data_raw,
     output reg[`MemOpTypeBus]   o_mem_op_type,
 
-    // to ctrl
+    // to Ctrl_unit
     output reg                  o_ex_branch,
     output reg                  o_ex_division_busy,
     output reg                  o_jump_flag,
@@ -326,7 +337,12 @@ module EX (
         // register write
         o_regd_we = i_Reg_we;
         o_regd_addr = i_regd_addr;
-        o_regd_data_alu = alu_result;
+        if (i_csr_wr_en) begin
+            o_regd_data = i_csr_data;
+        end
+        else begin
+            o_regd_data = alu_result;
+        end
         
         // memory write
         o_mem_we = i_Mem_we;
@@ -352,6 +368,46 @@ module EX (
             o_mem_addr = alu_result;
             o_mem_wr_data_raw = `ZeroWord;
         end
+    end
+
+    // CSRRS/CSRRC must not write when rs1=x0; CSRRSI/CSRRCI must not write when zimm=0
+    wire csr_wr_suppress =
+        ((i_csr_op == `funct3_csrrs  || i_csr_op == `funct3_csrrc)  && (i_reg1_addr == 5'b0)) ||
+        ((i_csr_op == `funct3_csrrsi || i_csr_op == `funct3_csrrci) && (i_csr_zimm_data == `ZeroWord));
+
+    // Forward register rs1 for CSR write data (same hazard as ALU but separate mux)
+    wire [`DataBus] fwd_reg1_data =
+        ex_mem_writeReg1 ? i_ex_mem_regd_data :
+        mem_wb_writeReg1 ? i_mem_wb_regd_data :
+        i_reg1_data;
+
+    // csr regs
+    always @(*) begin
+        o_csr_wr_en   = i_csr_wr_en && !csr_wr_suppress;
+        o_csr_wr_addr = i_csr_wr_addr;
+        case (i_csr_op)
+            `funct3_csrrw: begin
+                o_csr_wr_data = fwd_reg1_data;
+            end
+            `funct3_csrrs: begin
+                o_csr_wr_data = i_csr_data | fwd_reg1_data;
+            end
+            `funct3_csrrc: begin
+                o_csr_wr_data = i_csr_data & ~fwd_reg1_data;
+            end
+            `funct3_csrrwi: begin
+                o_csr_wr_data = i_csr_zimm_data;
+            end
+            `funct3_csrrsi: begin
+                o_csr_wr_data = i_csr_data | i_csr_zimm_data;
+            end
+            `funct3_csrrci: begin
+                o_csr_wr_data = i_csr_data & ~i_csr_zimm_data;
+            end
+            default: begin
+                o_csr_wr_data = `ZeroWord;
+            end
+        endcase
     end
 
 endmodule

@@ -4,12 +4,12 @@ module PC (
     input wire                  i_Clk,
     input wire                  i_reset,
     
-    // from ctrl
+    // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_pc_ctrl,      // ctrl flag
     input wire                  i_jump_flag,    // jump flag
     input wire[`InstAddrBus]    i_jump_addr,    // jump addr
 
-    // to if_id
+    // to IF_ID
     output reg[`InstAddrBus]    o_pc_addr       // pc addr 
 );
 

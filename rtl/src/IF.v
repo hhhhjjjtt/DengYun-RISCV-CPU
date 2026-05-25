@@ -1,7 +1,7 @@
 `include "defines.v"
 
 module IF (
-    // from pc
+    // from PC
     input wire[`InstAddrBus]    i_pc_addr,
     
     // I/O with instruction memory
@@ -12,10 +12,10 @@ module IF (
     output reg[`InstAddrBus]    o_imem_req_rd_addr,
     input wire[`DataBus]        i_imem_resp_rd_data,
 
-    // to ctrl
+    // to Ctrl_Unit
     output reg                  o_if_stall,
 
-    // to if_id
+    // to IF_ID
     output reg[`InstAddrBus]    o_pc_addr,
     output reg[`DataBus]        o_inst_data
 );

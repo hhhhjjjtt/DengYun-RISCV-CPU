@@ -6,10 +6,10 @@ OBJDUMP = riscv-none-elf-objdump
 HEXDUMP = hexdump
 
 # ---- Source directories ----
-SRC_DIRS = rv32i rv32m
+SRC_DIRS = rv32ui rv32um rv32mi
 
 # ---- Flags ----
-ARCH   = -march=rv32im
+ARCH   = -march=rv32im_zicsr
 ABI    = -mabi=ilp32
 CFLAGS = $(ARCH) $(ABI) -I .
 LDFLAGS = -T linker.ld -nostdlib -nostartfiles -Wl,--gc-sections,--no-relax
