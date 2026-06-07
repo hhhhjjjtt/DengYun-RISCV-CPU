@@ -15,16 +15,18 @@ module MEM (
     input wire[`MemOpTypeBus]   i_mem_op_type,
 
     // I/O with data memory
+    output reg                  o_dcache_en,    // to d_cache
+    output reg                  o_mmio_en,      // to mmio_port
     output reg                  o_dmem_valid,
     input wire                  i_dmem_ready,
     // I/O with data memory, read
     output reg                  o_dmem_rd_en,
-    output reg[`DataAddrBus]    o_dmem_rd_addr_raw,
+    output reg[`DataAddrBus]    o_dmem_rd_addr,
     input wire[`DataBus]        i_dmem_rd_data,
     // I/O with data memory, write
     output reg                  o_dmem_wr_en,           // write enable
     output reg[`StrbBus]        o_dmem_wr_strb,         // write strobe
-    output reg[`DataAddrBus]    o_dmem_wr_addr_raw,     // write address
+    output reg[`DataAddrBus]    o_dmem_wr_addr,     // write address
     output reg[`DataBus]        o_dmem_wr_data,         // write data
 
     // to Ctrl_Unit 
@@ -42,23 +44,17 @@ module MEM (
     // I/O with data memory
     wire do_dmem_req = i_mem_re || i_mem_we;
     always @(*) begin
-        if (i_dmem_ready) begin
-            o_dmem_valid    = `Disable;
-            o_mem_stall     = `Disable;
-        end
-        else begin
-            o_dmem_valid    = do_dmem_req;
-            o_mem_stall     = do_dmem_req;  
-        end
+        o_dmem_valid = do_dmem_req;
+        o_mem_stall  = do_dmem_req & ~i_dmem_ready;
     end
 
     always @(*) begin
-        o_dmem_rd_addr_raw  = i_mem_addr;
+        o_dmem_rd_addr      = i_mem_addr;
         o_dmem_rd_en        = i_mem_re;
         
         o_dmem_wr_en        = i_mem_we;
         o_dmem_wr_strb      = 4'b0000;
-        o_dmem_wr_addr_raw  = i_mem_addr;
+        o_dmem_wr_addr      = i_mem_addr;
         o_dmem_wr_data      = i_mem_wr_data_raw;
 
         o_regd_we           = i_regd_we;
@@ -107,6 +103,25 @@ module MEM (
                     o_regd_data = i_dmem_rd_data;
                 end
             endcase
+        end
+
+        o_dcache_en = `Disable;
+        o_mmio_en   = `Disable;
+        if (o_dmem_rd_en) begin
+            if (i_mem_addr >= `RAM_base && i_mem_addr < `Periph_base) begin
+                o_dcache_en     = `Enable;
+            end
+            else if (i_mem_addr >= `Periph_base) begin
+                o_mmio_en   = `Enable;
+            end
+        end
+        else if (o_dmem_wr_en) begin
+            if (i_mem_addr >= `RAM_base && i_mem_addr < `Periph_base) begin
+                o_dcache_en = `Enable;
+            end
+            else if (i_mem_addr >= `Periph_base) begin
+                o_mmio_en   = `Enable;
+            end
         end
     end
 

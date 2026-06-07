@@ -15,7 +15,9 @@
 `define InstAddrBus                     31:0
 `define DataAddrBus                     31:0
 
+`define ROM_base                        32'h0
 `define RAM_base                        32'h2000
+`define Periph_base                     32'h4000
 
 // ----Register Address & Data----
 `define RegsNum                         32

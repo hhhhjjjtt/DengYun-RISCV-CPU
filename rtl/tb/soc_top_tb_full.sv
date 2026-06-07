@@ -1,16 +1,16 @@
 `timescale 1ns/1ps
 
-module cpu_top_tb_full ();
+module soc_top_tb_full ();
 
     localparam CLK_PERIOD       = 20;
-    localparam SIMULATION_END   = 10000;
+    localparam SIMULATION_END   = 20000;
 
     reg r_Clk;
     reg r_reset;
     reg r_timer_int_pending;
     reg r_external_int_pending;
 
-    cpu_top cpu_top_0 (
+    soc_top soc_top_0 (
         .i_Clk                  (r_Clk),
         .i_reset                (r_reset),
         .i_timer_int_pending    (r_timer_int_pending),
@@ -114,6 +114,9 @@ module cpu_top_tb_full ();
         run_riscv_test();
         testcase = "ecall";
         run_riscv_test();
+        
+        $display("All Tests Passed!");
+        $finish;
     end
 
     task step;
@@ -145,8 +148,8 @@ module cpu_top_tb_full ();
 
     task loadtestcase;  // load intstructions to inst_rom; data to data_ram
         begin
-            $readmemh({testcase, "_inst_rom.mem"},cpu_top_0.Rom_0.roms);
-            $readmemh({testcase, "_data_ram.mem"},cpu_top_0.Ram_0.rams);
+            $readmemh({testcase, "_inst_rom.mem"},soc_top_0.Rom_0.roms);
+            $readmemh({testcase, "_data_ram.mem"},soc_top_0.Ram_0.rams);
             $display("---Begin test case %s-----", testcase);
         end
     endtask
@@ -155,7 +158,7 @@ module cpu_top_tb_full ();
         integer i;
         begin
             i = 0;
-            while((cpu_top_0.Regs_0.regs[10] != 32'h00c0ffee) && (i < SIMULATION_END)) begin
+            while((soc_top_0.CPU_0.Regs_0.regs[10] != 32'h00c0ffee) && (i < SIMULATION_END)) begin
                 step();
                 i = i+1;
             end
@@ -167,11 +170,11 @@ module cpu_top_tb_full ();
             if(numcycles > SIMULATION_END) begin
                 $display("!!!Error:test case %s does not terminate!", testcase);
             end
-            else if(cpu_top_0.Regs_0.regs[10] == 32'h00c0ffee) begin
+            else if(soc_top_0.CPU_0.Regs_0.regs[10] == 32'h00c0ffee) begin
                 $display("OK:test case %s finshed OK at cycle %d.",
                         testcase, numcycles - 1);
             end
-            else if(cpu_top_0.Regs_0.regs[10] == 32'hdeaddead) begin
+            else if(soc_top_0.CPU_0.Regs_0.regs[10] == 32'hdeaddead) begin
                 $display("!!!ERROR:test case %s finshed with error in cycle %d.",
                         testcase, numcycles - 1);
             end

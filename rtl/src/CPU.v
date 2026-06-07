@@ -1,10 +1,30 @@
 `include "defines.v"
 
-module cpu_top (
-    input wire i_Clk,
-    input wire i_reset,
-    input wire i_timer_int_pending,
-    input wire i_external_int_pending
+module CPU (
+    input wire                  i_Clk,
+    input wire                  i_reset,
+
+    input wire                  i_timer_int_pending,
+    input wire                  i_external_int_pending,
+
+    // to I_Cache
+    output wire                 o_imem_valid,
+    input wire                  i_imem_ready,
+    output wire[`InstAddrBus]   o_imem_rd_addr,
+    input wire[`DataBus]        i_imem_rd_data,
+    
+    // to D_Cache
+    output wire                 o_dcache_en,
+    output wire                 o_mmio_en,
+    output wire                 o_dmem_valid,
+    input wire                  i_dmem_ready,
+    output wire                 o_dmem_rd_en,
+    output wire[`DataAddrBus]   o_dmem_rd_addr,
+    input wire[`DataBus]        i_dmem_rd_data,
+    output wire                 o_dmem_wr_en,
+    output wire[`StrbBus]       o_dmem_wr_strb,
+    output wire[`DataAddrBus]   o_dmem_wr_addr,
+    output wire[`DataBus]       o_dmem_wr_data
 );
 
     // ---- Ctrl_Unit_0 outputs ---- 
@@ -20,19 +40,11 @@ module cpu_top (
     // ---- PC_0 outputs ---- 
     wire[`InstAddrBus]      pc_0_w_pc_addr;
     
-    // ---- IF_0 outputs ---- 
-    wire                    if_0_w_imem_valid;
-    wire                    if_0_w_imem_req_rd_en;
-    wire[`InstAddrBus]      if_0_w_imem_req_rd_addr;
-    
+    // ---- IF_0 outputs ----     
     wire                    if_0_w_if_stall;
     
     wire[`InstAddrBus]      if_0_w_pc_addr;
     wire[`DataBus]          if_0_w_inst_data;
-    
-    // ---- Rom_0 outputs ---- 
-    wire                    rom_comb_0_w_imem_ready;
-    wire[`DataBus]          rom_comb_0_w_imem_resp_rd_data;
     
     // ---- IF_ID_0 outputs ---- 
     wire[`InstAddrBus]      if_id_0_w_pc_addr;
@@ -177,27 +189,11 @@ module cpu_top (
     wire[`DataBus]          ex_mem_0_w_ex_mem_regd_data;
     
     // ---- MEM_0 outputs ----
-    wire                    mem_0_w_dmem_valid;
-    wire                    mem_0_w_dmem_rd_en;
-    wire[`DataAddrBus]      mem_0_w_dmem_rd_addr_raw;
-    wire                    mem_0_w_dmem_wr_en;
-    wire[`StrbBus]          mem_0_w_dmem_wr_strb;
-    wire[`DataAddrBus]      mem_0_w_dmem_wr_addr_raw;
-    wire[`DataBus]          mem_0_w_dmem_wr_data;
-
     wire                    mem_0_w_mem_stall;
     
     wire                    mem_0_w_regd_we;
     wire[`RegsAddrBus]      mem_0_w_regd_addr;
     wire[`DataBus]          mem_0_w_regd_data;
-    
-    // ---- dmem_decoder_0 outputs ----
-    wire[`DataAddrBus]      dmem_decoder_0_w_dmem_rd_addr;
-    wire[`DataAddrBus]      dmem_decoder_0_w_dmem_wr_addr;
-    
-    // ---- Ram_0 outputs ----
-    wire                    ram_comb_0_w_dmem_ready;
-    wire[`DataBus]          ram_comb_0_w_dmem_rd_data;
     
     // ---- MEM_WB_0 outputs ----
     wire                    mem_wb_0_w_regd_we;
@@ -213,15 +209,8 @@ module cpu_top (
     wire[`RegsAddrBus]      wb_0_w_regd_addr;
     wire[`DataBus]          wb_0_w_regd_data;
 
-    // ---- extra control for imem, dmem, and Divider ----
-    wire                    imem_resp_accept;
-    wire                    dmem_resp_accept;
+    // ---- extra control for Divider ----
     wire                    div_result_accept;
-    assign imem_resp_accept = rom_comb_0_w_imem_ready &&
-                            (ctrl_unit_0_w_if_id_ctrl != `ctrl_stall);
-    assign dmem_resp_accept = ram_comb_0_w_dmem_ready &&
-                            (ctrl_unit_0_w_mem_wb_ctrl != `ctrl_stall) &&
-                            (ctrl_unit_0_w_ex_mem_ctrl != `ctrl_stall);
     assign div_result_accept = divider_0_w_div_ready &&
                             (ctrl_unit_0_w_ex_mem_ctrl != `ctrl_stall);
 
@@ -264,31 +253,16 @@ module cpu_top (
 
     IF IF_0 (
         .i_pc_addr              (pc_0_w_pc_addr),
-        
-        .o_imem_valid           (if_0_w_imem_valid),
-        .i_imem_ready           (rom_comb_0_w_imem_ready),
-        .o_imem_req_rd_en       (if_0_w_imem_req_rd_en),
-        .o_imem_req_rd_addr     (if_0_w_imem_req_rd_addr),
-        .i_imem_resp_rd_data    (rom_comb_0_w_imem_resp_rd_data),
+
+        .o_imem_valid           (o_imem_valid),
+        .i_imem_ready           (i_imem_ready),
+        .o_imem_rd_addr         (o_imem_rd_addr),
+        .i_imem_rd_data         (i_imem_rd_data),
         
         .o_if_stall             (if_0_w_if_stall),
         
         .o_pc_addr              (if_0_w_pc_addr),
         .o_inst_data            (if_0_w_inst_data)
-    );
-
-    Rom Rom_0 (
-        .i_Clk                  (i_Clk),
-        .i_reset                (i_reset),
-        
-        .i_imem_resp_accept     (imem_resp_accept),
-        
-        .i_imem_valid           (if_0_w_imem_valid),
-        .o_imem_ready           (rom_comb_0_w_imem_ready),
-        
-        .i_imem_rd_en           (if_0_w_imem_req_rd_en),
-        .i_imem_rd_addr         (if_0_w_imem_req_rd_addr),
-        .o_imem_rd_data         (rom_comb_0_w_imem_resp_rd_data)
     );
 
     IF_ID IF_ID_0 (
@@ -579,48 +553,23 @@ module cpu_top (
         .i_mem_wr_data_raw      (ex_mem_0_w_mem_wr_data_raw),
         .i_mem_op_type          (ex_mem_0_w_mem_op_type),
         
-        .o_dmem_valid           (mem_0_w_dmem_valid),
-        .i_dmem_ready           (ram_comb_0_w_dmem_ready),
-        .o_dmem_rd_en           (mem_0_w_dmem_rd_en),
-        .o_dmem_rd_addr_raw     (mem_0_w_dmem_rd_addr_raw),
-        .i_dmem_rd_data         (ram_comb_0_w_dmem_rd_data),
-        .o_dmem_wr_en           (mem_0_w_dmem_wr_en),
-        .o_dmem_wr_strb         (mem_0_w_dmem_wr_strb),
-        .o_dmem_wr_addr_raw     (mem_0_w_dmem_wr_addr_raw),
-        .o_dmem_wr_data         (mem_0_w_dmem_wr_data),
+        .o_dcache_en            (o_dcache_en),
+        .o_mmio_en              (o_mmio_en),
+        .o_dmem_valid           (o_dmem_valid),
+        .i_dmem_ready           (i_dmem_ready),
+        .o_dmem_rd_en           (o_dmem_rd_en),
+        .o_dmem_rd_addr         (o_dmem_rd_addr),
+        .i_dmem_rd_data         (i_dmem_rd_data),
+        .o_dmem_wr_en           (o_dmem_wr_en),
+        .o_dmem_wr_strb         (o_dmem_wr_strb),
+        .o_dmem_wr_addr         (o_dmem_wr_addr),
+        .o_dmem_wr_data         (o_dmem_wr_data),
         
         .o_mem_stall            (mem_0_w_mem_stall),
         
         .o_regd_we              (mem_0_w_regd_we),
         .o_regd_addr            (mem_0_w_regd_addr),
         .o_regd_data            (mem_0_w_regd_data)
-    );
-
-    dmem_decoder dmem_decoder_0 (
-        .i_dmem_rd_addr_raw     (mem_0_w_dmem_rd_addr_raw),
-        .o_dmem_rd_addr         (dmem_decoder_0_w_dmem_rd_addr),
-        
-        .i_dmem_wr_addr_raw     (mem_0_w_dmem_wr_addr_raw),
-        .o_dmem_wr_addr         (dmem_decoder_0_w_dmem_wr_addr)
-    );
-
-    Ram Ram_0 (
-        .i_Clk                  (i_Clk),
-        .i_reset                (i_reset),
-        
-        .i_dmem_resp_accept     (dmem_resp_accept),
-        
-        .i_dmem_valid           (mem_0_w_dmem_valid),
-        .o_dmem_ready           (ram_comb_0_w_dmem_ready),
-        
-        .i_dmem_rd_en           (mem_0_w_dmem_rd_en),
-        .i_dmem_rd_addr         (dmem_decoder_0_w_dmem_rd_addr),
-        .o_dmem_rd_data         (ram_comb_0_w_dmem_rd_data),
-        
-        .i_dmem_wr_en           (mem_0_w_dmem_wr_en),
-        .i_dmem_wr_strb         (mem_0_w_dmem_wr_strb),
-        .i_dmem_wr_addr         (dmem_decoder_0_w_dmem_wr_addr),
-        .i_dmem_wr_data         (mem_0_w_dmem_wr_data)
     );
 
     MEM_WB MEM_WB_0 (

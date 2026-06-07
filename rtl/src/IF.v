@@ -8,9 +8,8 @@ module IF (
     output reg                  o_imem_valid,
     input wire                  i_imem_ready,
     // I/O with instruction memory, read
-    output reg                  o_imem_req_rd_en,
-    output reg[`InstAddrBus]    o_imem_req_rd_addr,
-    input wire[`DataBus]        i_imem_resp_rd_data,
+    output reg[`InstAddrBus]    o_imem_rd_addr,
+    input wire[`DataBus]        i_imem_rd_data,
 
     // to Ctrl_Unit
     output reg                  o_if_stall,
@@ -21,22 +20,15 @@ module IF (
 );
 
     always @(*) begin
-        if (i_imem_ready) begin
-            o_imem_valid    = `Disable;
-            o_if_stall      = `Disable;
-        end
-        else begin
-            o_imem_valid    = `Enable;
-            o_if_stall      = `Enable;
-        end
+        o_imem_valid = `Enable;
+        o_if_stall   = ~i_imem_ready;
     end
 
     always @(*) begin
-        o_imem_req_rd_en    = `Enable;
-        o_imem_req_rd_addr  = i_pc_addr;
+        o_imem_rd_addr      = i_pc_addr;
         
         o_pc_addr           = i_pc_addr;
-        o_inst_data         = i_imem_resp_rd_data;
+        o_inst_data         = i_imem_rd_data;
     end
 
 endmodule

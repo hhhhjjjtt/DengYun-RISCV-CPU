@@ -30,12 +30,12 @@ module Regs_CSR (
 
     reg [63:0] cycle;
 
-    reg [`DataBus] mtvec;
-    reg [`DataBus] mcause;
-    reg [`DataBus] mepc;
-    reg [`DataBus] mie;
-    reg [`DataBus] mstatus;
-    reg [`DataBus] mscratch;
+    reg [`DataBus] mtvec;       // Trap Vector
+    reg [`DataBus] mcause;      // Trap Vector
+    reg [`DataBus] mepc;        // Exception PC
+    reg [`DataBus] mie;         // Machine Interrupt Enable
+    reg [`DataBus] mstatus;     // Machine Status
+    reg [`DataBus] mscratch;    // Scratch 
 
     always @(*) begin
         o_csr_mtvec     = mtvec;
