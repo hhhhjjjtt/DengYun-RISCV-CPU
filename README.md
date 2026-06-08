@@ -2,7 +2,7 @@
 **DengYun-1** (**DY-1**) is a 32-bit RISC-V SoC written in Verilog, targeting FPGA deployment. The CPU core is a single-issue in-order 5-stage pipeline implementing RV32IM, backed by split L1 caches on an AXI4 interconnect. 
 
 ## Overview
-[Placeholder — Add a picture later]
+![Overview](img/DengYun-1_SOC.png)
 
 ## Features
 - **RV32IMZicsr** — base integer, multiply/divide, and privileged CSR instructions
@@ -30,12 +30,13 @@ Requires `riscv-none-elf-gcc`. Output lands in `test/test_full/mem/`.
 
 ## Timeline
 1. AXI4 bus (priority arbiter with DMA stub) + connect masters/slaves (✓)
-3. v0.7 — full SoC, assembly tests passing with new bus/cache (✓)
+3. Full SoC, assembly tests passing with new bus/cache (✓)
 4. UART, CLINT
-5. v0.8 — FPGA synthesis, timing closure, blink/uart hello world
+5. FPGA synthesis, timing closure, blink/uart hello world
 6. C toolchain bring-up, printf, basic programs
-7. v0.9 — Coremark
+7. Running Coremark performance check
 ---
-8. SPI, I2C, GPIO 
+8. SPI, GPIO 
 9. DMA (software-managed flush + non-cacheable region)
-10. v1.0 — RTOS
+10. JTAG
+11. Running RTOS

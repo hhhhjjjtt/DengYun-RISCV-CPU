@@ -7,8 +7,8 @@ module soc_top #(
     input wire                  i_Clk,
     input wire                  i_reset,
     
-    input wire                  i_timer_int_pending,
-    input wire                  i_external_int_pending
+    input wire                  i_timer_int_pending,        // temporary, will come from Timer's interrupt wire
+    input wire                  i_external_int_pending      // temporary, will come from other peripheral's interrupt wires
 );
 
     // ---- CPU Outputs ----
