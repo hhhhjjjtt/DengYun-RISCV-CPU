@@ -5,16 +5,20 @@ module soc_top_tb_full ();
     localparam CLK_PERIOD       = 20;
     localparam SIMULATION_END   = 20000;
 
-    reg r_Clk;
-    reg r_reset;
-    reg r_timer_int_pending;
-    reg r_external_int_pending;
+    reg     reg_Clk;
+    reg     reg_reset;
+    
+    reg     reg_rx_serial;
+    wire    wire_tx_serial;
+    
+    reg     reg_timer_int_pending;
 
     soc_top soc_top_0 (
-        .i_Clk                  (r_Clk),
-        .i_reset                (r_reset),
-        .i_timer_int_pending    (r_timer_int_pending),
-        .i_external_int_pending (r_external_int_pending)
+        .i_Clk                  (reg_Clk),
+        .i_reset                (reg_reset),
+        .o_tx_serial            (wire_tx_serial),
+        .i_rx_serial            (reg_rx_serial),
+        .i_timer_int_pending    (reg_timer_int_pending)
     );
 
     string  testcase;
@@ -121,8 +125,8 @@ module soc_top_tb_full ();
 
     task step;
         begin
-            #(CLK_PERIOD/2 - 1) r_Clk = 1'b0;
-            #(CLK_PERIOD/2)     r_Clk = 1'b1;
+            #(CLK_PERIOD/2 - 1) reg_Clk = 1'b0;
+            #(CLK_PERIOD/2)     reg_Clk = 1'b1;
             numcycles = numcycles + 1;
             #1 ;
         end
@@ -139,17 +143,17 @@ module soc_top_tb_full ();
 
     task resetcpu;  // reset the CPU and the test
         begin
-            r_reset = 1'b1;
+            reg_reset = 1'b1;
             step();
-            #5 r_reset = 1'b0;
+            #5 reg_reset = 1'b0;
             numcycles = 0;
         end
     endtask
 
     task loadtestcase;  // load intstructions to inst_rom; data to data_ram
         begin
-            $readmemh({testcase, "_inst_rom.mem"},soc_top_0.Rom_0.roms);
-            $readmemh({testcase, "_data_ram.mem"},soc_top_0.Ram_0.rams);
+            $readmemh({testcase, "_inst_rom.mem"},soc_top_0.ROM_0.roms);
+            $readmemh({testcase, "_data_ram.mem"},soc_top_0.RAM_0.rams);
             $display("---Begin test case %s-----", testcase);
         end
     endtask

@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module EX (    
     // from ID_EX
@@ -196,7 +196,7 @@ module EX (
                 alu_result = alu_SRC_B;
             end
             `ALU_op_mul: begin
-                alu_result = mul_ss[31:0];;
+                alu_result = mul_ss[31:0];
             end
             `ALU_op_mulh: begin
                 alu_result = mul_ss[63:32];

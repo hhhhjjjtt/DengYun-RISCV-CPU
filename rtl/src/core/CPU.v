@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module CPU (
     input wire                  i_Clk,
@@ -134,6 +134,7 @@ module CPU (
     wire                    trap_unit_0_w_trap_jump_flag;
     wire[`InstAddrBus]      trap_unit_0_w_trap_jump_addr;
     wire                    trap_unit_0_w_trap_stall;
+    wire                    trap_unit_0_w_trap_is_interrupt;
     wire[`DataAddrBus]      trap_unit_0_w_trap_csr_rd_addr;
     wire                    trap_unit_0_w_trap_csr_wr_en;
     wire[`DataAddrBus]      trap_unit_0_w_trap_csr_wr_addr;
@@ -229,6 +230,7 @@ module CPU (
         .i_trap_jump_flag       (trap_unit_0_w_trap_jump_flag),
         .i_trap_jump_addr       (trap_unit_0_w_trap_jump_addr),
         .i_trap_stall           (trap_unit_0_w_trap_stall),
+        .i_trap_is_interrupt    (trap_unit_0_w_trap_is_interrupt),
 
         .o_pc_ctrl              (ctrl_unit_0_w_pc_ctrl),
         .o_jump_flag            (ctrl_unit_0_w_jump_flag),
@@ -625,7 +627,11 @@ module CPU (
 
         .o_trap_jump_flag       (trap_unit_0_w_trap_jump_flag),
         .o_trap_jump_addr       (trap_unit_0_w_trap_jump_addr),
-        .o_trap_stall           (trap_unit_0_w_trap_stall)
+        .o_trap_stall           (trap_unit_0_w_trap_stall),
+        .o_trap_is_interrupt    (trap_unit_0_w_trap_is_interrupt),
+
+        .i_mem_stall            (mem_0_w_mem_stall),
+        .i_if_stall             (if_0_w_if_stall)
     );
 
 endmodule

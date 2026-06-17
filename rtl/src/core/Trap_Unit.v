@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module Trap_Unit (
     input wire                  i_Clk,
@@ -28,7 +28,12 @@ module Trap_Unit (
     // to Ctrl_Unit
     output reg                  o_trap_jump_flag,
     output reg[`InstAddrBus]    o_trap_jump_addr,
-    output reg                  o_trap_stall
+    output reg                  o_trap_stall,
+    output reg                  o_trap_is_interrupt,
+
+    // from Ctrl_Unit (stall signals — interrupt must not fire while pipeline is stalled)
+    input wire                  i_mem_stall,
+    input wire                  i_if_stall
 );
 
     // State machine states
@@ -41,11 +46,12 @@ module Trap_Unit (
     wire mstatus_mpie = i_csr_mstatus[7];   // Machine Previous Interrupt Enable
 
     // trap condition wires
-    wire is_exception       = (i_trap_cause == `trap_ecall) || (i_trap_cause == `trap_ebreak);
-    wire is_timer_int       = i_timer_int_pending && i_csr_mie[7] && mstatus_mie;
-    wire is_external_int    = i_external_int_pending && i_csr_mie[11] && mstatus_mie;
-    wire is_interrupt       = is_timer_int || is_external_int;
-    wire is_mret            = (i_trap_cause == `trap_mret);
+    wire pipeline_free   = !i_mem_stall && !i_if_stall;
+    wire is_exception    = (i_trap_cause == `trap_ecall) || (i_trap_cause == `trap_ebreak);
+    wire is_timer_int    = i_timer_int_pending    && i_csr_mie[7]  && mstatus_mie && pipeline_free;
+    wire is_external_int = i_external_int_pending && i_csr_mie[11] && mstatus_mie && pipeline_free;
+    wire is_interrupt    = is_timer_int || is_external_int;
+    wire is_mret         = (i_trap_cause == `trap_mret);
 
     reg[1:0]      state;
     reg[1:0]      next_state;
@@ -86,23 +92,25 @@ module Trap_Unit (
     // mret (1-cycle):
     //   Cycle 0 (S_IDLE):  write mstatus, assert jump → mepc, no stall
     always @(*) begin
-        o_trap_csr_rd_addr = `ZeroWord;
-        o_trap_csr_wr_en   = 1'b0;
-        o_trap_csr_wr_addr = `ZeroWord;
-        o_trap_csr_wr_data = `ZeroWord;
-        o_trap_jump_flag   = 1'b0;
-        o_trap_jump_addr   = `ZeroAddr;
-        o_trap_stall       = 1'b0;
-        next_state         = state;
+        o_trap_csr_rd_addr  = `ZeroWord;
+        o_trap_csr_wr_en    = 1'b0;
+        o_trap_csr_wr_addr  = `ZeroWord;
+        o_trap_csr_wr_data  = `ZeroWord;
+        o_trap_jump_flag    = 1'b0;
+        o_trap_jump_addr    = `ZeroAddr;
+        o_trap_stall        = 1'b0;
+        o_trap_is_interrupt = 1'b0;
+        next_state          = state;
 
         case (state)
             S_IDLE: begin
                 if (is_exception || is_interrupt) begin
                     // Cycle 0: save PC to mepc, redirect to mtvec
-                    o_trap_csr_wr_en   = 1'b1;
-                    o_trap_csr_wr_addr = `CSR_MEPC;
-                    o_trap_csr_wr_data = i_pc_addr;
-                    o_trap_jump_flag   = 1'b1;
+                    o_trap_csr_wr_en    = 1'b1;
+                    o_trap_csr_wr_addr  = `CSR_MEPC;
+                    o_trap_csr_wr_data  = i_pc_addr;
+                    o_trap_jump_flag    = 1'b1;
+                    o_trap_is_interrupt = is_interrupt;
                     o_trap_jump_addr   = i_csr_mtvec;
                     next_state         = S_TRAP_MCAUSE;
                 end else if (is_mret) begin

@@ -1,9 +1,9 @@
 `include "defines.v"
 
 // ---- AXI4 Interconnect ----
-// M0→S0 direct, M2→S2 direct, M1+M3→S1 arbitrated
+// M0→S0 direct, M2→S2,S3 based on address, M1+M3→S1 arbitrated
 // Masters: M0=i_cache(AR+R), M1=d_cache(full), M2=mmio_port(full), M3=DMA stub(full)
-// Slaves:  S0=ROM(AR+R),     S1=RAM(full),     S2=Peripheral(full)
+// Slaves:  S0=ROM(AR+R), S1=RAM(full), S2=PLIC(full), S3=UART(full)
 
 module AXI4 (
     input wire          i_Clk,
@@ -12,196 +12,278 @@ module AXI4 (
     // ---- Master 0: i_cache (AR + R only) ----
     input wire[31:0]    M0_ARADDR,
     input wire          M0_ARVALID,
-    output wire         M0_ARREADY,
+    output reg          M0_ARREADY,
     input wire[7:0]     M0_ARLEN,
     input wire[2:0]     M0_ARSIZE,
     input wire[1:0]     M0_ARBURST,
-    output wire[31:0]   M0_RDATA,
-    output wire         M0_RVALID,
+    output reg[31:0]    M0_RDATA,
+    output reg          M0_RVALID,
     input wire          M0_RREADY,
-    output wire         M0_RLAST,
+    output reg          M0_RLAST,
 
     // ---- Master 1: d_cache (full AXI) ----
     input wire[31:0]    M1_ARADDR,
     input wire          M1_ARVALID,
-    output wire         M1_ARREADY,
+    output reg          M1_ARREADY,
     input wire[7:0]     M1_ARLEN,
     input wire[2:0]     M1_ARSIZE,
     input wire[1:0]     M1_ARBURST,
-    output wire[31:0]   M1_RDATA,
-    output wire         M1_RVALID,
+    output reg[31:0]    M1_RDATA,
+    output reg          M1_RVALID,
     input wire          M1_RREADY,
-    output wire         M1_RLAST,
+    output reg          M1_RLAST,
     input wire[31:0]    M1_AWADDR,
     input wire          M1_AWVALID,
-    output wire         M1_AWREADY,
+    output reg          M1_AWREADY,
     input wire[7:0]     M1_AWLEN,
     input wire[2:0]     M1_AWSIZE,
     input wire[1:0]     M1_AWBURST,
     input wire[31:0]    M1_WDATA,
     input wire          M1_WVALID,
-    output wire         M1_WREADY,
+    output reg          M1_WREADY,
     input wire          M1_WLAST,
     input wire[3:0]     M1_WSTRB,
-    output wire[1:0]    M1_BRESP,
-    output wire         M1_BVALID,
+    output reg[1:0]     M1_BRESP,
+    output reg          M1_BVALID,
     input wire          M1_BREADY,
 
     // ---- Master 2: mmio_port (full AXI) ----
     input wire[31:0]    M2_ARADDR,
     input wire          M2_ARVALID,
-    output wire         M2_ARREADY,
+    output reg          M2_ARREADY,
     input wire[7:0]     M2_ARLEN,
     input wire[2:0]     M2_ARSIZE,
     input wire[1:0]     M2_ARBURST,
-    output wire[31:0]   M2_RDATA,
-    output wire         M2_RVALID,
+    output reg[31:0]    M2_RDATA,
+    output reg          M2_RVALID,
     input wire          M2_RREADY,
-    output wire         M2_RLAST,
+    output reg          M2_RLAST,
     input wire[31:0]    M2_AWADDR,
     input wire          M2_AWVALID,
-    output wire         M2_AWREADY,
+    output reg          M2_AWREADY,
     input wire[7:0]     M2_AWLEN,
     input wire[2:0]     M2_AWSIZE,
     input wire[1:0]     M2_AWBURST,
     input wire[31:0]    M2_WDATA,
     input wire          M2_WVALID,
-    output wire         M2_WREADY,
+    output reg          M2_WREADY,
     input wire          M2_WLAST,
     input wire[3:0]     M2_WSTRB,
-    output wire[1:0]    M2_BRESP,
-    output wire         M2_BVALID,
+    output reg[1:0]     M2_BRESP,
+    output reg          M2_BVALID,
     input wire          M2_BREADY,
 
     // ---- Master 3: DMA stub (full AXI, tie all inputs to 0 in cpu_top) ----
     input wire[31:0]    M3_ARADDR,
     input wire          M3_ARVALID,
-    output wire         M3_ARREADY,
+    output reg          M3_ARREADY,
     input wire[7:0]     M3_ARLEN,
     input wire[2:0]     M3_ARSIZE,
     input wire[1:0]     M3_ARBURST,
-    output wire[31:0] M3_RDATA,
-    output wire         M3_RVALID,
+    output reg[31:0]    M3_RDATA,
+    output reg          M3_RVALID,
     input wire          M3_RREADY,
-    output wire         M3_RLAST,
+    output reg          M3_RLAST,
     input wire[31:0]    M3_AWADDR,
     input wire          M3_AWVALID,
-    output wire         M3_AWREADY,
+    output reg          M3_AWREADY,
     input wire[7:0]     M3_AWLEN,
     input wire[2:0]     M3_AWSIZE,
     input wire[1:0]     M3_AWBURST,
     input wire[31:0]    M3_WDATA,
     input wire          M3_WVALID,
-    output wire         M3_WREADY,
+    output reg          M3_WREADY,
     input wire          M3_WLAST,
     input wire[3:0]     M3_WSTRB,
-    output wire[1:0]    M3_BRESP,
-    output wire         M3_BVALID,
+    output reg[1:0]     M3_BRESP,
+    output reg          M3_BVALID,
     input wire          M3_BREADY,
 
     // ---- Slave 0: ROM (AR + R only) ----
-    output wire[31:0]   S0_ARADDR,
-    output wire         S0_ARVALID,
+    output reg[31:0]    S0_ARADDR,
+    output reg          S0_ARVALID,
     input wire          S0_ARREADY,
-    output wire[7:0]    S0_ARLEN,
-    output wire[2:0]    S0_ARSIZE,
-    output wire[1:0]    S0_ARBURST,
+    output reg[7:0]     S0_ARLEN,
+    output reg[2:0]     S0_ARSIZE,
+    output reg[1:0]     S0_ARBURST,
     input wire[31:0]    S0_RDATA,
     input wire          S0_RVALID,
-    output wire         S0_RREADY,
+    output reg          S0_RREADY,
     input wire          S0_RLAST,
 
     // ---- Slave 1: RAM (full AXI) ----
-    output wire[31:0]   S1_ARADDR,
-    output wire         S1_ARVALID,
+    output reg[31:0]    S1_ARADDR,
+    output reg          S1_ARVALID,
     input wire          S1_ARREADY,
-    output wire[7:0]    S1_ARLEN,
-    output wire[2:0]    S1_ARSIZE,
-    output wire[1:0]    S1_ARBURST,
+    output reg[7:0]     S1_ARLEN,
+    output reg[2:0]     S1_ARSIZE,
+    output reg[1:0]     S1_ARBURST,
     input wire[31:0]    S1_RDATA,
     input wire          S1_RVALID,
-    output wire         S1_RREADY,
+    output reg          S1_RREADY,
     input wire          S1_RLAST,
-    output wire[31:0]   S1_AWADDR,
-    output wire         S1_AWVALID,
+    output reg[31:0]    S1_AWADDR,
+    output reg          S1_AWVALID,
     input wire          S1_AWREADY,
-    output wire[7:0]    S1_AWLEN,
-    output wire[2:0]    S1_AWSIZE,
-    output wire[1:0]    S1_AWBURST,
-    output wire[31:0]   S1_WDATA,
-    output wire         S1_WVALID,
+    output reg[7:0]     S1_AWLEN,
+    output reg[2:0]     S1_AWSIZE,
+    output reg[1:0]     S1_AWBURST,
+    output reg[31:0]    S1_WDATA,
+    output reg          S1_WVALID,
     input wire          S1_WREADY,
-    output wire         S1_WLAST,
-    output wire[3:0]    S1_WSTRB,
+    output reg          S1_WLAST,
+    output reg[3:0]     S1_WSTRB,
     input wire[1:0]     S1_BRESP,
     input wire          S1_BVALID,
-    output wire         S1_BREADY,
+    output reg          S1_BREADY,
 
-    // ---- Slave 2: Peripheral (full AXI) ----
-    output wire[31:0]   S2_ARADDR,
-    output wire         S2_ARVALID,
+    // ---- Slave 2: PLIC (full AXI) ----
+    output reg[31:0]    S2_ARADDR,
+    output reg          S2_ARVALID,
     input wire          S2_ARREADY,
-    output wire[7:0]    S2_ARLEN,
-    output wire[2:0]    S2_ARSIZE,
-    output wire[1:0]    S2_ARBURST,
+    output reg[7:0]     S2_ARLEN,
+    output reg[2:0]     S2_ARSIZE,
+    output reg[1:0]     S2_ARBURST,
     input wire[31:0]    S2_RDATA,
     input wire          S2_RVALID,
-    output wire         S2_RREADY,
+    output reg          S2_RREADY,
     input wire          S2_RLAST,
-    output wire[31:0]   S2_AWADDR,
-    output wire         S2_AWVALID,
+    output reg[31:0]    S2_AWADDR,
+    output reg          S2_AWVALID,
     input wire          S2_AWREADY,
-    output wire[7:0]    S2_AWLEN,
-    output wire[2:0]    S2_AWSIZE,
-    output wire[1:0]    S2_AWBURST,
-    output wire[31:0]   S2_WDATA,
-    output wire         S2_WVALID,
+    output reg[7:0]     S2_AWLEN,
+    output reg[2:0]     S2_AWSIZE,
+    output reg[1:0]     S2_AWBURST,
+    output reg[31:0]    S2_WDATA,
+    output reg          S2_WVALID,
     input wire          S2_WREADY,
-    output wire         S2_WLAST,
-    output wire[3:0]    S2_WSTRB,
+    output reg          S2_WLAST,
+    output reg[3:0]     S2_WSTRB,
     input wire[1:0]     S2_BRESP,
     input wire          S2_BVALID,
-    output wire         S2_BREADY
+    output reg          S2_BREADY,
+
+    // ---- Slave 3: UART (full AXI) ----
+    output reg[31:0]    S3_ARADDR,
+    output reg          S3_ARVALID,
+    input wire          S3_ARREADY,
+    output reg[7:0]     S3_ARLEN,
+    output reg[2:0]     S3_ARSIZE,
+    output reg[1:0]     S3_ARBURST,
+    input wire[31:0]    S3_RDATA,
+    input wire          S3_RVALID,
+    output reg          S3_RREADY,
+    input wire          S3_RLAST,
+    output reg[31:0]    S3_AWADDR,
+    output reg          S3_AWVALID,
+    input wire          S3_AWREADY,
+    output reg[7:0]     S3_AWLEN,
+    output reg[2:0]     S3_AWSIZE,
+    output reg[1:0]     S3_AWBURST,
+    output reg[31:0]    S3_WDATA,
+    output reg          S3_WVALID,
+    input wire          S3_WREADY,
+    output reg          S3_WLAST,
+    output reg[3:0]     S3_WSTRB,
+    input wire[1:0]     S3_BRESP,
+    input wire          S3_BVALID,
+    output reg          S3_BREADY
 );
 
-    // S0 (ROM)
-    assign S0_ARADDR  = M0_ARADDR;
-    assign S0_ARVALID = M0_ARVALID;
-    assign M0_ARREADY = S0_ARREADY;
-    assign S0_ARLEN   = M0_ARLEN;
-    assign S0_ARSIZE  = M0_ARSIZE;
-    assign S0_ARBURST = M0_ARBURST;
-    assign M0_RDATA   = S0_RDATA;
-    assign M0_RVALID  = S0_RVALID;
-    assign S0_RREADY  = M0_RREADY;
-    assign M0_RLAST   = S0_RLAST;
+    // M0 <--> S0 (i_cache <--> ROM)
+    always @(*) begin
+        S0_ARADDR  = M0_ARADDR;
+        S0_ARVALID = M0_ARVALID;
+        M0_ARREADY = S0_ARREADY;
+        S0_ARLEN   = M0_ARLEN;
+        S0_ARSIZE  = M0_ARSIZE;
+        S0_ARBURST = M0_ARBURST;
+        M0_RDATA   = S0_RDATA;
+        M0_RVALID  = S0_RVALID;
+        S0_RREADY  = M0_RREADY;
+        M0_RLAST   = S0_RLAST;
+    end
 
-    // S2 (Peripheral)
-    assign S2_ARADDR  = M2_ARADDR;
-    assign S2_ARVALID = M2_ARVALID;
-    assign M2_ARREADY = S2_ARREADY;
-    assign S2_ARLEN   = M2_ARLEN;
-    assign S2_ARSIZE  = M2_ARSIZE;
-    assign S2_ARBURST = M2_ARBURST;
-    assign M2_RDATA   = S2_RDATA;
-    assign M2_RVALID  = S2_RVALID;
-    assign S2_RREADY  = M2_RREADY;
-    assign M2_RLAST   = S2_RLAST;
-
-    assign S2_AWADDR  = M2_AWADDR;
-    assign S2_AWVALID = M2_AWVALID;
-    assign M2_AWREADY = S2_AWREADY;
-    assign S2_AWLEN   = M2_AWLEN;
-    assign S2_AWSIZE  = M2_AWSIZE;
-    assign S2_AWBURST = M2_AWBURST;
-    assign S2_WDATA   = M2_WDATA;
-    assign S2_WVALID  = M2_WVALID;
-    assign M2_WREADY  = S2_WREADY;
-    assign S2_WLAST   = M2_WLAST;
-    assign S2_WSTRB   = M2_WSTRB;
-    assign M2_BRESP   = S2_BRESP;
-    assign M2_BVALID  = S2_BVALID;
-    assign S2_BREADY  = M2_BREADY;
+    // M2 <--> S2/S3 (mmio <--> (PLIC)/(UART))
+    always @(*) begin
+        // AR
+        M2_ARREADY = 1'b0;
+        S2_ARADDR  = M2_ARADDR;
+        S2_ARVALID = 1'b0;
+        S2_ARLEN   = M2_ARLEN;
+        S2_ARSIZE  = M2_ARSIZE;
+        S2_ARBURST = M2_ARBURST;
+        S3_ARADDR  = M2_ARADDR;
+        S3_ARVALID = 1'b0;
+        S3_ARLEN   = M2_ARLEN;
+        S3_ARSIZE  = M2_ARSIZE;
+        S3_ARBURST = M2_ARBURST;
+        // R
+        M2_RDATA   = S2_RDATA;
+        M2_RVALID  = 1'b0;
+        M2_RLAST   = S2_RLAST;
+        S2_RREADY  = 1'b0;
+        S3_RREADY  = 1'b0;
+        // AW
+        M2_AWREADY = 1'b0;
+        S2_AWADDR  = M2_AWADDR;
+        S2_AWVALID = 1'b0;
+        S2_AWLEN   = M2_AWLEN;
+        S2_AWSIZE  = M2_AWSIZE;
+        S2_AWBURST = M2_AWBURST;
+        S3_AWADDR  = M2_AWADDR;
+        S3_AWVALID = 1'b0;
+        S3_AWLEN   = M2_AWLEN;
+        S3_AWSIZE  = M2_AWSIZE;
+        S3_AWBURST = M2_AWBURST;
+        // W
+        M2_WREADY  = 1'b0;
+        S2_WDATA   = M2_WDATA;
+        S2_WVALID  = 1'b0;
+        S2_WLAST   = M2_WLAST;
+        S2_WSTRB   = M2_WSTRB;
+        S3_WDATA   = M2_WDATA;
+        S3_WVALID  = 1'b0;
+        S3_WLAST   = M2_WLAST;
+        S3_WSTRB   = M2_WSTRB;
+        // B
+        M2_BRESP   = S2_BRESP;
+        M2_BVALID  = 1'b0;
+        S2_BREADY  = 1'b0;
+        S3_BREADY  = 1'b0;
+        if (M2_ARADDR >= `PLIC_BASE && M2_ARADDR < `PLIC_BASE + `REGION_SIZE) begin
+            M2_RDATA   = S2_RDATA;
+            S2_ARVALID = M2_ARVALID;
+            M2_ARREADY = S2_ARREADY;
+            M2_RVALID  = S2_RVALID;
+            S2_RREADY  = M2_RREADY;
+        end
+        else begin
+            M2_RDATA   = S3_RDATA;
+            M2_RLAST   = S3_RLAST;
+            S3_ARVALID = M2_ARVALID;
+            M2_ARREADY = S3_ARREADY;
+            M2_RVALID  = S3_RVALID;
+            S3_RREADY  = M2_RREADY;
+        end
+        if (M2_AWADDR >= `PLIC_BASE && M2_AWADDR < `PLIC_BASE + `REGION_SIZE) begin
+            S2_AWVALID = M2_AWVALID;
+            M2_AWREADY = S2_AWREADY;
+            S2_WVALID  = M2_WVALID;
+            M2_WREADY  = S2_WREADY;
+            M2_BVALID  = S2_BVALID;
+            S2_BREADY  = M2_BREADY;
+        end
+        else begin
+            S3_AWVALID = M2_AWVALID;
+            M2_AWREADY = S3_AWREADY;
+            S3_WVALID  = M2_WVALID;
+            M2_WREADY  = S3_WREADY;
+            M2_BRESP   = S3_BRESP;
+            M2_BVALID  = S3_BVALID;
+            S3_BREADY  = M2_BREADY;
+        end
+    end
 
     // S1 (RAM): arbiter between M1 (d_cache) and M3 (DMA)
     // Priority: M1 > M3 on both read and write channels
@@ -219,13 +301,23 @@ module AXI4 (
         else begin
             case (ram_rd_state)
                 RD_IDLE: begin
-                    if      (M1_ARVALID && S1_ARREADY)                ram_rd_state <= RD_SERVE_M1;
-                    else if (M3_ARVALID && S1_ARREADY && !M1_ARVALID) ram_rd_state <= RD_SERVE_M3;
+                    if (M1_ARVALID && S1_ARREADY) begin
+                        ram_rd_state <= RD_SERVE_M1;
+                    end 
+                    else if (M3_ARVALID && S1_ARREADY && !M1_ARVALID) begin
+                        ram_rd_state <= RD_SERVE_M3;
+                    end
                 end
-                RD_SERVE_M1:
-                    if (S1_RVALID && S1_RLAST && M1_RREADY) ram_rd_state <= RD_IDLE;
-                RD_SERVE_M3:
-                    if (S1_RVALID && S1_RLAST && M3_RREADY) ram_rd_state <= RD_IDLE;
+                RD_SERVE_M1: begin
+                    if (S1_RVALID && S1_RLAST && M1_RREADY) begin
+                        ram_rd_state <= RD_IDLE;
+                    end
+                end
+                RD_SERVE_M3:  begin
+                    if (S1_RVALID && S1_RLAST && M3_RREADY) begin
+                        ram_rd_state <= RD_IDLE;
+                    end 
+                end 
                 default: ram_rd_state <= RD_IDLE;
             endcase
         end
@@ -233,25 +325,6 @@ module AXI4 (
 
     wire m1_ar_wins = (ram_rd_state == RD_IDLE) &&  M1_ARVALID;
     wire m3_ar_wins = (ram_rd_state == RD_IDLE) && !M1_ARVALID && M3_ARVALID;
-
-    assign S1_ARVALID = m1_ar_wins || m3_ar_wins;
-    assign S1_ARADDR  = m1_ar_wins ? M1_ARADDR  : M3_ARADDR;
-    assign S1_ARLEN   = m1_ar_wins ? M1_ARLEN   : M3_ARLEN;
-    assign S1_ARSIZE  = m1_ar_wins ? M1_ARSIZE  : M3_ARSIZE;
-    assign S1_ARBURST = m1_ar_wins ? M1_ARBURST : M3_ARBURST;
-
-    assign M1_ARREADY = m1_ar_wins && S1_ARREADY;
-    assign M3_ARREADY = m3_ar_wins && S1_ARREADY;
-
-    assign M1_RDATA  = (ram_rd_state == RD_SERVE_M1) ? S1_RDATA  : 32'b0;
-    assign M1_RVALID = (ram_rd_state == RD_SERVE_M1) ? S1_RVALID : 1'b0;
-    assign M1_RLAST  = (ram_rd_state == RD_SERVE_M1) ? S1_RLAST  : 1'b0;
-    assign M3_RDATA  = (ram_rd_state == RD_SERVE_M3) ? S1_RDATA  : 32'b0;
-    assign M3_RVALID = (ram_rd_state == RD_SERVE_M3) ? S1_RVALID : 1'b0;
-    assign M3_RLAST  = (ram_rd_state == RD_SERVE_M3) ? S1_RLAST  : 1'b0;
-
-    assign S1_RREADY = (ram_rd_state == RD_SERVE_M1) ? M1_RREADY :
-                       (ram_rd_state == RD_SERVE_M3) ? M3_RREADY : 1'b0;
 
     // Write arbiter: AW + W + B
     localparam WR_IDLE       = 3'd0;
@@ -269,56 +342,87 @@ module AXI4 (
         else begin
             case (ram_wr_state)
                 WR_IDLE: begin
-                    if      (M1_AWVALID && S1_AWREADY)                ram_wr_state <= WR_SERVE_M1;
-                    else if (M3_AWVALID && S1_AWREADY && !M1_AWVALID) ram_wr_state <= WR_SERVE_M3;
+                    if (M1_AWVALID && S1_AWREADY) begin
+                        ram_wr_state <= WR_SERVE_M1;
+                    end 
+                    else if (M3_AWVALID && S1_AWREADY && !M1_AWVALID) begin
+                        ram_wr_state <= WR_SERVE_M3;
+                    end
                 end
-                WR_SERVE_M1:
-                    if (M1_WVALID && S1_WREADY && M1_WLAST) ram_wr_state <= WR_SERVE_M1_B;
-                WR_SERVE_M1_B:
-                    if (S1_BVALID && M1_BREADY) ram_wr_state <= WR_IDLE;
-                WR_SERVE_M3:
-                    if (M3_WVALID && S1_WREADY && M3_WLAST) ram_wr_state <= WR_SERVE_M3_B;
-                WR_SERVE_M3_B:
-                    if (S1_BVALID && M3_BREADY) ram_wr_state <= WR_IDLE;
+                WR_SERVE_M1: begin
+                    if (M1_WVALID && S1_WREADY && M1_WLAST) begin
+                        ram_wr_state <= WR_SERVE_M1_B;
+                    end
+                end
+                WR_SERVE_M1_B: begin
+                    if (S1_BVALID && M1_BREADY) begin
+                        ram_wr_state <= WR_IDLE;
+                    end
+                end
+                WR_SERVE_M3: begin
+                    if (M3_WVALID && S1_WREADY && M3_WLAST) begin
+                        ram_wr_state <= WR_SERVE_M3_B;
+                    end 
+                end
+                WR_SERVE_M3_B: begin
+                    if (S1_BVALID && M3_BREADY) begin
+                        ram_wr_state <= WR_IDLE;
+                    end
+                end
                 default: ram_wr_state <= WR_IDLE;
             endcase
         end
     end
 
-    // AW
-    wire m1_aw_active = (ram_wr_state == WR_IDLE     &&  M1_AWVALID) ||
-                        (ram_wr_state == WR_SERVE_M1)                 ||
-                        (ram_wr_state == WR_SERVE_M1_B);
-    wire m3_aw_active = (ram_wr_state == WR_IDLE     && !M1_AWVALID && M3_AWVALID) ||
-                        (ram_wr_state == WR_SERVE_M3)                               ||
+    wire m1_aw_active = (ram_wr_state == WR_IDLE && M1_AWVALID) ||
+                            (ram_wr_state == WR_SERVE_M1) ||
+                            (ram_wr_state == WR_SERVE_M1_B);
+    wire m3_aw_active = (ram_wr_state == WR_IDLE && !M1_AWVALID && M3_AWVALID) ||
+                        (ram_wr_state == WR_SERVE_M3) ||
                         (ram_wr_state == WR_SERVE_M3_B);
 
-    assign S1_AWVALID = m1_aw_active ? M1_AWVALID : (m3_aw_active ? M3_AWVALID : 1'b0);
-    assign S1_AWADDR  = m1_aw_active ? M1_AWADDR  : M3_AWADDR;
-    assign S1_AWLEN   = m1_aw_active ? M1_AWLEN   : M3_AWLEN;
-    assign S1_AWSIZE  = m1_aw_active ? M1_AWSIZE  : M3_AWSIZE;
-    assign S1_AWBURST = m1_aw_active ? M1_AWBURST : M3_AWBURST;
-
-    assign M1_AWREADY = m1_aw_active ? S1_AWREADY : 1'b0;
-    assign M3_AWREADY = m3_aw_active ? S1_AWREADY : 1'b0;
-
-    // W
-    assign S1_WVALID = (ram_wr_state == WR_SERVE_M1) ? M1_WVALID :
-                       (ram_wr_state == WR_SERVE_M3) ? M3_WVALID : 1'b0;
-    assign S1_WDATA  = (ram_wr_state == WR_SERVE_M1) ? M1_WDATA  : M3_WDATA;
-    assign S1_WLAST  = (ram_wr_state == WR_SERVE_M1) ? M1_WLAST  : M3_WLAST;
-    assign S1_WSTRB  = (ram_wr_state == WR_SERVE_M1) ? M1_WSTRB  : M3_WSTRB;
-
-    assign M1_WREADY = (ram_wr_state == WR_SERVE_M1) ? S1_WREADY : 1'b0;
-    assign M3_WREADY = (ram_wr_state == WR_SERVE_M3) ? S1_WREADY : 1'b0;
-
-    // B
-    assign M1_BVALID = (ram_wr_state == WR_SERVE_M1_B) ? S1_BVALID : 1'b0;
-    assign M1_BRESP  = (ram_wr_state == WR_SERVE_M1_B) ? S1_BRESP  : 2'b0;
-    assign M3_BVALID = (ram_wr_state == WR_SERVE_M3_B) ? S1_BVALID : 1'b0;
-    assign M3_BRESP  = (ram_wr_state == WR_SERVE_M3_B) ? S1_BRESP  : 2'b0;
-
-    assign S1_BREADY = (ram_wr_state == WR_SERVE_M1_B) ? M1_BREADY :
+    // M1/M3 <--> S1 (d_cache <--> RAM)
+    always @(*) begin
+        // AR
+        S1_ARVALID  = m1_ar_wins || m3_ar_wins;
+        S1_ARADDR   = m1_ar_wins ? M1_ARADDR  : M3_ARADDR;
+        S1_ARLEN    = m1_ar_wins ? M1_ARLEN   : M3_ARLEN;
+        S1_ARSIZE   = m1_ar_wins ? M1_ARSIZE  : M3_ARSIZE;
+        S1_ARBURST  = m1_ar_wins ? M1_ARBURST : M3_ARBURST;
+        M1_ARREADY  = m1_ar_wins && S1_ARREADY;
+        M3_ARREADY  = m3_ar_wins && S1_ARREADY;
+        // R
+        M1_RDATA    = (ram_rd_state == RD_SERVE_M1) ? S1_RDATA  : 32'b0;
+        M1_RVALID   = (ram_rd_state == RD_SERVE_M1) ? S1_RVALID : 1'b0;
+        M1_RLAST    = (ram_rd_state == RD_SERVE_M1) ? S1_RLAST  : 1'b0;
+        M3_RDATA    = (ram_rd_state == RD_SERVE_M3) ? S1_RDATA  : 32'b0;
+        M3_RVALID   = (ram_rd_state == RD_SERVE_M3) ? S1_RVALID : 1'b0;
+        M3_RLAST    = (ram_rd_state == RD_SERVE_M3) ? S1_RLAST  : 1'b0;
+        S1_RREADY   = (ram_rd_state == RD_SERVE_M1) ? M1_RREADY :
+                        (ram_rd_state == RD_SERVE_M3) ? M3_RREADY : 1'b0;
+        // AW
+        S1_AWVALID  = m1_aw_active ? M1_AWVALID : (m3_aw_active ? M3_AWVALID : 1'b0);
+        S1_AWADDR   = m1_aw_active ? M1_AWADDR  : M3_AWADDR;
+        S1_AWLEN    = m1_aw_active ? M1_AWLEN   : M3_AWLEN;
+        S1_AWSIZE   = m1_aw_active ? M1_AWSIZE  : M3_AWSIZE;
+        S1_AWBURST  = m1_aw_active ? M1_AWBURST : M3_AWBURST;
+        M1_AWREADY  = m1_aw_active ? S1_AWREADY : 1'b0;
+        M3_AWREADY  = m3_aw_active ? S1_AWREADY : 1'b0;
+        // W
+        S1_WVALID = (ram_wr_state == WR_SERVE_M1) ? M1_WVALID :
+                    (ram_wr_state == WR_SERVE_M3) ? M3_WVALID : 1'b0;
+        S1_WDATA  = (ram_wr_state == WR_SERVE_M1) ? M1_WDATA  : M3_WDATA;
+        S1_WLAST  = (ram_wr_state == WR_SERVE_M1) ? M1_WLAST  : M3_WLAST;
+        S1_WSTRB  = (ram_wr_state == WR_SERVE_M1) ? M1_WSTRB  : M3_WSTRB;
+        M1_WREADY = (ram_wr_state == WR_SERVE_M1) ? S1_WREADY : 1'b0;
+        M3_WREADY = (ram_wr_state == WR_SERVE_M3) ? S1_WREADY : 1'b0;
+        // B
+        M1_BVALID = (ram_wr_state == WR_SERVE_M1_B) ? S1_BVALID : 1'b0;
+        M1_BRESP  = (ram_wr_state == WR_SERVE_M1_B) ? S1_BRESP  : 2'b0;
+        M3_BVALID = (ram_wr_state == WR_SERVE_M3_B) ? S1_BVALID : 1'b0;
+        M3_BRESP  = (ram_wr_state == WR_SERVE_M3_B) ? S1_BRESP  : 2'b0;
+        S1_BREADY = (ram_wr_state == WR_SERVE_M1_B) ? M1_BREADY :
                        (ram_wr_state == WR_SERVE_M3_B) ? M3_BREADY : 1'b0;
+    end
 
 endmodule

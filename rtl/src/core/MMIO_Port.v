@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 // ---- mmio_port ----
 // Uncached AXI master for peripheral (MMIO) accesses.

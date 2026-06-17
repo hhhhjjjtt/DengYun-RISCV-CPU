@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module Ctrl_Unit (
     // from IF
@@ -20,6 +20,7 @@ module Ctrl_Unit (
     input wire                      i_trap_jump_flag,
     input wire[`InstAddrBus]        i_trap_jump_addr,
     input wire                      i_trap_stall,
+    input wire                      i_trap_is_interrupt,
 
     // to PC
     output reg[`CtrlTypeBus]        o_pc_ctrl,
@@ -48,11 +49,13 @@ module Ctrl_Unit (
             o_ex_mem_ctrl   = `ctrl_stall;
             o_mem_wb_ctrl   = `ctrl_stall;
         end
-        else if (i_trap_jump_flag) begin        // trap/mret: flush IF/ID/EX, redirect PC
+        else if (i_trap_jump_flag) begin        // trap/mret: flush IF/ID, redirect PC
             o_pc_ctrl       = `ctrl_none;
             o_if_id_ctrl    = `ctrl_flush;
             o_id_ex_ctrl    = `ctrl_flush;
-            o_ex_mem_ctrl   = `ctrl_none;
+            // interrupts flush EX so mepc (=PC_EX) is the correct return address;
+            // exceptions let EX complete (ecall/ebreak write nothing to rd)
+            o_ex_mem_ctrl   = i_trap_is_interrupt ? `ctrl_flush : `ctrl_none;
             o_mem_wb_ctrl   = `ctrl_none;
             o_jump_flag     = i_trap_jump_flag;
             o_jump_addr     = i_trap_jump_addr;

@@ -15,9 +15,15 @@
 `define InstAddrBus                     31:0
 `define DataAddrBus                     31:0
 
-`define ROM_base                        32'h0
-`define RAM_base                        32'h2000
-`define Periph_base                     32'h4000
+// ----Address Mapping----
+`define REGION_SIZE                     32'h2000
+
+`define ROM_BASE                        32'h0000
+`define RAM_BASE                        32'h2000
+`define PLIC_BASE                       32'h4000
+`define UART_BASE                       32'h6000
+`define GPIO_BASE                       32'h8000
+`define SPI_BASE                        32'hA000
 
 // ----Register Address & Data----
 `define RegsNum                         32
@@ -33,15 +39,6 @@
 // ----Enable/Disable----
 `define Enable                          1
 `define Disable                         0
-
-`define WriteEnable                     1
-`define WriteDisable                    0
-`define ReadEnable                      1
-`define ReadDisable                     0
-`define CycleEnable                     1
-`define CycleDisable                    0
-`define StrobeEnable                    1
-`define StrobeDisable                   0
 
 // ----Pipeline Control----
 `define CtrlTypeBus                     1:0
@@ -224,5 +221,8 @@
 `define CSR_MSCRATCH                    12'h340
 `define CSR_MEPC                        12'h341
 `define CSR_MCAUSE                      12'h342
+
+// ---- Peripherals ----
+`define Num_IntSrc                      4'd2
 
 `endif

@@ -1,11 +1,11 @@
-`include "defines.v"
+`include "../defines.v"
 
 // ---- RAM AXI Slave ----
 // Full AXI (AR+R+AW+W+B). Serialized: one read or write at a time.
 // Burst support: ARLEN+1 read beats, AWLEN+1 write beats.
-// Byte-enable writes via WSTRB. Address offset: word = (addr - RAM_base) >> 2.
+// Byte-enable writes via WSTRB. Address offset: word = (addr - RAM_BASE) >> 2.
 
-module Ram #(
+module RAM #(
     parameter MEM_FILE = "ram.mem"
 ) (
     input wire          i_Clk,
@@ -18,13 +18,11 @@ module Ram #(
     input wire[7:0]     i_axi_arlen,
     input wire[2:0]     i_axi_arsize,
     input wire[1:0]     i_axi_arburst,
-
     // AXI slave — R channel
     output reg[31:0]    o_axi_rdata,
     output reg          o_axi_rvalid,
     input wire          i_axi_rready,
     output reg          o_axi_rlast,
-
     // AXI slave — AW channel
     input wire[31:0]    i_axi_awaddr,
     input wire          i_axi_awvalid,
@@ -32,14 +30,12 @@ module Ram #(
     input wire[7:0]     i_axi_awlen,
     input wire[2:0]     i_axi_awsize,
     input wire[1:0]     i_axi_awburst,
-
     // AXI slave — W channel
     input wire[31:0]    i_axi_wdata,
     input wire          i_axi_wvalid,
     output reg          o_axi_wready,
     input wire          i_axi_wlast,
     input wire[3:0]     i_axi_wstrb,
-
     // AXI slave — B channel
     output reg[1:0]     o_axi_bresp,
     output reg          o_axi_bvalid,
@@ -86,16 +82,16 @@ module Ram #(
                     o_axi_wready  <= 1'b0;
 
                     if (i_axi_arvalid && o_axi_arready) begin
-                        word_idx      <= (i_axi_araddr - `RAM_base) >> 2;
+                        word_idx      <= (i_axi_araddr - `RAM_BASE) >> 2;
                         beats_left    <= i_axi_arlen;
-                        o_axi_rdata   <= rams[(i_axi_araddr - `RAM_base) >> 2];
+                        o_axi_rdata   <= rams[(i_axi_araddr - `RAM_BASE) >> 2];
                         o_axi_rvalid  <= 1'b1;
                         o_axi_rlast   <= (i_axi_arlen == 8'd0);
                         o_axi_arready <= 1'b0;
                         o_axi_awready <= 1'b0;
                         state         <= S_READ;
                     end else if (i_axi_awvalid && o_axi_awready) begin
-                        word_idx      <= (i_axi_awaddr - `RAM_base) >> 2;
+                        word_idx      <= (i_axi_awaddr - `RAM_BASE) >> 2;
                         o_axi_awready <= 1'b0;
                         o_axi_arready <= 1'b0;
                         o_axi_wready  <= 1'b1;

@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module Regs_CSR (
     input wire                  i_Clk,

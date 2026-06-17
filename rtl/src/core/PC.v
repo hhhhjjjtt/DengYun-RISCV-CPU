@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module PC (
     input wire                  i_Clk,

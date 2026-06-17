@@ -1,11 +1,11 @@
-`include "defines.v"
+`include "../defines.v"
 
 // ---- ROM AXI Slave ----
 // Read-only, AR+R channels only.
 // Burst support: returns ARLEN+1 beats starting at ARADDR (INCR).
 // Load program with MEM_FILE parameter (hex, one 32-bit word per line).
 
-module Rom #(
+module ROM #(
     parameter MEM_FILE = "rom.mem"
 ) (
     input  wire         i_Clk,
@@ -18,7 +18,6 @@ module Rom #(
     input wire[7:0]     i_axi_arlen,
     input wire[2:0]     i_axi_arsize,
     input wire[1:0]     i_axi_arburst,
-
     // AXI slave — R channel
     output reg[31:0]    o_axi_rdata,
     output reg          o_axi_rvalid,

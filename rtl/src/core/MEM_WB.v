@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module MEM_WB (
     input wire                  i_Clk,
@@ -25,10 +25,10 @@ module MEM_WB (
 
     always @(posedge i_Clk or posedge i_reset) begin
         if (i_reset) begin
-            o_regd_we           <= `WriteDisable;
+            o_regd_we           <= `Disable;
             o_regd_addr         <= `Reg0Addr;
             o_regd_data         <= `ZeroWord;
-            o_mem_wb_regd_we    <= `WriteDisable;
+            o_mem_wb_regd_we    <= `Disable;
             o_mem_wb_regd_addr  <= `Reg0Addr;
             o_mem_wb_regd_data  <= `ZeroWord;
         end

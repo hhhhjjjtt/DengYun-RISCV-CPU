@@ -6,9 +6,12 @@ module soc_top #(
 ) (
     input wire                  i_Clk,
     input wire                  i_reset,
-    
-    input wire                  i_timer_int_pending,        // temporary, will come from Timer's interrupt wire
-    input wire                  i_external_int_pending      // temporary, will come from other peripheral's interrupt wires
+
+    // Peripheral: UART
+    output wire                 o_tx_serial,
+    input wire                  i_rx_serial,
+
+    input wire                  i_timer_int_pending     // temporary, will come from Timer's interrupt wire
 );
 
     // ---- CPU Outputs ----
@@ -161,33 +164,84 @@ module soc_top #(
     wire[3:0]           S2_WSTRB;
     wire                S2_BREADY;
 
-    // ---- Rom Outputs ----
-    wire                Rom_axi_arready;
+    wire[31:0]          S3_ARADDR;
+    wire                S3_ARVALID;
+    wire[7:0]           S3_ARLEN;
+    wire[2:0]           S3_ARSIZE;
+    wire[1:0]           S3_ARBURST;
+    wire                S3_RREADY;
+    wire[31:0]          S3_AWADDR;
+    wire                S3_AWVALID;
+    wire[7:0]           S3_AWLEN;
+    wire[2:0]           S3_AWSIZE;
+    wire[31:0]          S3_WDATA;
+    wire                S3_WVALID;
+    wire                S3_WLAST;
+    wire[3:0]           S3_WSTRB;
+    wire                S3_BREADY;
 
-    wire[31:0]          Rom_axi_rdata;
-    wire                Rom_axi_rvalid;
-    wire                Rom_axi_rlast;
+    // ---- ROM Outputs ----
+    wire                ROM_axi_arready;
 
-    // ---- Ram Outputs ----
-    wire                Ram_axi_arready;
+    wire[31:0]          ROM_axi_rdata;
+    wire                ROM_axi_rvalid;
+    wire                ROM_axi_rlast;
 
-    wire[31:0]          Ram_axi_rdata;
-    wire                Ram_axi_rvalid;
-    wire                Ram_axi_rlast;
+    // ---- RAM Outputs ----
+    wire                RAM_axi_arready;
 
-    wire                Ram_axi_awready;
+    wire[31:0]          RAM_axi_rdata;
+    wire                RAM_axi_rvalid;
+    wire                RAM_axi_rlast;
 
-    wire                Ram_axi_wready;
+    wire                RAM_axi_awready;
 
-    wire[1:0]           Ram_axi_bresp;
-    wire                Ram_axi_bvalid;
+    wire                RAM_axi_wready;
+
+    wire[1:0]           RAM_axi_bresp;
+    wire                RAM_axi_bvalid;
+
+    // ---- UART Outputs ----
+    wire                UART_axi_arready;
+
+    wire[31:0]          UART_axi_rdata;
+    wire                UART_axi_rvalid;
+    wire                UART_axi_rlast;
+
+    wire                UART_axi_awready;
+
+    wire                UART_axi_wready;
+
+    wire[1:0]           UART_axi_bresp;
+    wire                UART_axi_bvalid;
+
+    wire                UART_tx_done;
+    wire                UART_tx_busy;
+
+    wire                UART_rx_valid;
+    
+    // ---- PLIC Outputs ----
+    wire                PLIC_axi_arready;
+
+    wire[31:0]          PLIC_axi_rdata;
+    wire                PLIC_axi_rvalid;
+    wire                PLIC_axi_rlast;
+
+    wire                PLIC_axi_awready;
+
+    wire                PLIC_axi_wready;
+
+    wire[1:0]           PLIC_axi_bresp;
+    wire                PLIC_axi_bvalid;
+
+    wire                PLIC_external_int_pending;
 
     CPU CPU_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
         .i_timer_int_pending    (i_timer_int_pending),
-        .i_external_int_pending (i_external_int_pending),
+        .i_external_int_pending (PLIC_external_int_pending),
 
         .o_imem_valid           (CPU_imem_valid),
         .i_imem_ready           (I_Cache_imem_ready),
@@ -408,122 +462,222 @@ module soc_top #(
         .M3_BVALID              (M3_BVALID),
         .M3_BREADY              (1'b0),
 
+        // ROM
         .S0_ARADDR              (S0_ARADDR),
         .S0_ARVALID             (S0_ARVALID),
-        .S0_ARREADY             (Rom_axi_arready),
+        .S0_ARREADY             (ROM_axi_arready),
         .S0_ARLEN               (S0_ARLEN),
         .S0_ARSIZE              (S0_ARSIZE),
         .S0_ARBURST             (S0_ARBURST),
-        .S0_RDATA               (Rom_axi_rdata),
-        .S0_RVALID              (Rom_axi_rvalid),
+        .S0_RDATA               (ROM_axi_rdata),
+        .S0_RVALID              (ROM_axi_rvalid),
         .S0_RREADY              (S0_RREADY),
-        .S0_RLAST               (Rom_axi_rlast),
+        .S0_RLAST               (ROM_axi_rlast),
 
+        // RAM
         .S1_ARADDR              (S1_ARADDR),
         .S1_ARVALID             (S1_ARVALID),
-        .S1_ARREADY             (Ram_axi_arready),
+        .S1_ARREADY             (RAM_axi_arready),
         .S1_ARLEN               (S1_ARLEN),
         .S1_ARSIZE              (S1_ARSIZE),
         .S1_ARBURST             (S1_ARBURST),
-        .S1_RDATA               (Ram_axi_rdata),
-        .S1_RVALID              (Ram_axi_rvalid),
+        .S1_RDATA               (RAM_axi_rdata),
+        .S1_RVALID              (RAM_axi_rvalid),
         .S1_RREADY              (S1_RREADY),
-        .S1_RLAST               (Ram_axi_rlast),
+        .S1_RLAST               (RAM_axi_rlast),
         .S1_AWADDR              (S1_AWADDR),
         .S1_AWVALID             (S1_AWVALID),
-        .S1_AWREADY             (Ram_axi_awready),
+        .S1_AWREADY             (RAM_axi_awready),
         .S1_AWLEN               (S1_AWLEN),
         .S1_AWSIZE              (S1_AWSIZE),
         .S1_AWBURST             (S1_AWBURST),
         .S1_WDATA               (S1_WDATA),
         .S1_WVALID              (S1_WVALID),
-        .S1_WREADY              (Ram_axi_wready),
+        .S1_WREADY              (RAM_axi_wready),
         .S1_WLAST               (S1_WLAST),
         .S1_WSTRB               (S1_WSTRB),
-        .S1_BRESP               (Ram_axi_bresp),
-        .S1_BVALID              (Ram_axi_bvalid),
+        .S1_BRESP               (RAM_axi_bresp),
+        .S1_BVALID              (RAM_axi_bvalid),
         .S1_BREADY              (S1_BREADY),
 
-        // for future peripherals (UART, SPI, IIC), unused for now
+        // PLIC
         .S2_ARADDR              (S2_ARADDR),
         .S2_ARVALID             (S2_ARVALID),
-        .S2_ARREADY             (1'b0),
+        .S2_ARREADY             (PLIC_axi_arready),
         .S2_ARLEN               (S2_ARLEN),
         .S2_ARSIZE              (S2_ARSIZE),
         .S2_ARBURST             (S2_ARBURST),
-        .S2_RDATA               (32'b0),
-        .S2_RVALID              (1'b0),
+        .S2_RDATA               (PLIC_axi_rdata),
+        .S2_RVALID              (PLIC_axi_rvalid),
         .S2_RREADY              (S2_RREADY),
-        .S2_RLAST               (1'b0),
+        .S2_RLAST               (PLIC_axi_rlast),
         .S2_AWADDR              (S2_AWADDR),
         .S2_AWVALID             (S2_AWVALID),
-        .S2_AWREADY             (1'b0),
+        .S2_AWREADY             (PLIC_axi_awready),
         .S2_AWLEN               (S2_AWLEN),
         .S2_AWSIZE              (S2_AWSIZE),
         .S2_AWBURST             (S2_AWBURST),
         .S2_WDATA               (S2_WDATA),
         .S2_WVALID              (S2_WVALID),
-        .S2_WREADY              (1'b0),
+        .S2_WREADY              (PLIC_axi_wready),
         .S2_WLAST               (S2_WLAST),
         .S2_WSTRB               (S2_WSTRB),
-        .S2_BRESP               (2'b00),
-        .S2_BVALID              (1'b0),
-        .S2_BREADY              (S2_BREADY)
+        .S2_BRESP               (PLIC_axi_bresp),
+        .S2_BVALID              (PLIC_axi_bvalid),
+        .S2_BREADY              (S2_BREADY),
+
+        // UART
+        .S3_ARADDR              (S3_ARADDR),
+        .S3_ARVALID             (S3_ARVALID),
+        .S3_ARREADY             (UART_axi_arready),
+        .S3_ARLEN               (S3_ARLEN),
+        .S3_ARSIZE              (S3_ARSIZE),
+        .S3_ARBURST             (S3_ARBURST),
+        .S3_RDATA               (UART_axi_rdata),
+        .S3_RVALID              (UART_axi_rvalid),
+        .S3_RREADY              (S3_RREADY),
+        .S3_RLAST               (UART_axi_rlast),
+        .S3_AWADDR              (S3_AWADDR),
+        .S3_AWVALID             (S3_AWVALID),
+        .S3_AWREADY             (UART_axi_awready),
+        .S3_AWLEN               (S3_AWLEN),
+        .S3_AWSIZE              (S3_AWSIZE),
+        .S3_AWBURST             (S3_AWBURST),
+        .S3_WDATA               (S3_WDATA),
+        .S3_WVALID              (S3_WVALID),
+        .S3_WREADY              (UART_axi_wready),
+        .S3_WLAST               (S3_WLAST),
+        .S3_WSTRB               (S3_WSTRB),
+        .S3_BRESP               (UART_axi_bresp),
+        .S3_BVALID              (UART_axi_bvalid),
+        .S3_BREADY              (S3_BREADY)
     );
 
-    Rom #(
+    ROM #(
         .MEM_FILE(ROM_FILE)
-    ) Rom_0 (
+    ) ROM_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
         
         .i_axi_araddr           (S0_ARADDR),
         .i_axi_arvalid          (S0_ARVALID),
-        .o_axi_arready          (Rom_axi_arready),
+        .o_axi_arready          (ROM_axi_arready),
         .i_axi_arlen            (S0_ARLEN),
         .i_axi_arsize           (S0_ARSIZE),
         .i_axi_arburst          (S0_ARBURST),
 
-        .o_axi_rdata            (Rom_axi_rdata),
-        .o_axi_rvalid           (Rom_axi_rvalid),
+        .o_axi_rdata            (ROM_axi_rdata),
+        .o_axi_rvalid           (ROM_axi_rvalid),
         .i_axi_rready           (S0_RREADY),
-        .o_axi_rlast            (Rom_axi_rlast)
+        .o_axi_rlast            (ROM_axi_rlast)
     );
 
-    Ram #(
+    RAM #(
         .MEM_FILE(RAM_FILE)
-    ) Ram_0 (
+    ) RAM_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
         .i_axi_araddr           (S1_ARADDR),
         .i_axi_arvalid          (S1_ARVALID),
-        .o_axi_arready          (Ram_axi_arready),
+        .o_axi_arready          (RAM_axi_arready),
         .i_axi_arlen            (S1_ARLEN),
         .i_axi_arsize           (S1_ARSIZE),
         .i_axi_arburst          (S1_ARBURST),
 
-        .o_axi_rdata            (Ram_axi_rdata),
-        .o_axi_rvalid           (Ram_axi_rvalid),
+        .o_axi_rdata            (RAM_axi_rdata),
+        .o_axi_rvalid           (RAM_axi_rvalid),
         .i_axi_rready           (S1_RREADY),
-        .o_axi_rlast            (Ram_axi_rlast),
+        .o_axi_rlast            (RAM_axi_rlast),
 
         .i_axi_awaddr           (S1_AWADDR),
         .i_axi_awvalid          (S1_AWVALID),
-        .o_axi_awready          (Ram_axi_awready),
+        .o_axi_awready          (RAM_axi_awready),
         .i_axi_awlen            (S1_AWLEN),
         .i_axi_awsize           (S1_AWSIZE),
         .i_axi_awburst          (S1_AWBURST),
 
         .i_axi_wdata            (S1_WDATA),
         .i_axi_wvalid           (S1_WVALID),
-        .o_axi_wready           (Ram_axi_wready),
+        .o_axi_wready           (RAM_axi_wready),
         .i_axi_wlast            (S1_WLAST),
         .i_axi_wstrb            (S1_WSTRB),
 
-        .o_axi_bresp            (Ram_axi_bresp),
-        .o_axi_bvalid           (Ram_axi_bvalid),
+        .o_axi_bresp            (RAM_axi_bresp),
+        .o_axi_bvalid           (RAM_axi_bvalid),
         .i_axi_bready           (S1_BREADY)
     );
-    
+
+    wire[`Num_IntSrc-1:0]       PLIC_int_src = {UART_tx_done, UART_rx_valid};
+    PLIC PLIC_0 (
+        .i_Clk                  (i_Clk),
+        .i_reset                (i_reset),
+
+        .i_axi_araddr           (S2_ARADDR),
+        .i_axi_arvalid          (S2_ARVALID),
+        .o_axi_arready          (PLIC_axi_arready),
+        .i_axi_arlen            (S2_ARLEN),
+        .i_axi_arsize           (S2_ARSIZE),
+        .i_axi_arburst          (S2_ARBURST),
+        .o_axi_rdata            (PLIC_axi_rdata),
+        .o_axi_rvalid           (PLIC_axi_rvalid),
+        .i_axi_rready           (S2_RREADY),
+        .o_axi_rlast            (PLIC_axi_rlast),
+        .i_axi_awaddr           (S2_AWADDR),
+        .i_axi_awvalid          (S2_AWVALID),
+        .o_axi_awready          (PLIC_axi_awready),
+        .i_axi_awlen            (S2_AWLEN),
+        .i_axi_awsize           (S2_AWSIZE),
+        .i_axi_awburst          (S2_AWBURST),
+        .i_axi_wdata            (S2_WDATA),
+        .i_axi_wvalid           (S2_WVALID),
+        .o_axi_wready           (PLIC_axi_wready),
+        .i_axi_wlast            (S2_WLAST),
+        .i_axi_wstrb            (S2_WSTRB),
+        .o_axi_bresp            (PLIC_axi_bresp),
+        .o_axi_bvalid           (PLIC_axi_bvalid),
+        .i_axi_bready           (S2_BREADY),
+
+        .i_src                  (PLIC_int_src),
+
+        .o_external_int_pending (PLIC_external_int_pending)
+    );
+
+    UART UART_0 (
+        .i_Clk                  (i_Clk),
+        .i_reset                (i_reset),
+
+        .i_axi_araddr           (S3_ARADDR),
+        .i_axi_arvalid          (S3_ARVALID),
+        .o_axi_arready          (UART_axi_arready),
+        .i_axi_arlen            (S3_ARLEN),
+        .i_axi_arsize           (S3_ARSIZE),
+        .i_axi_arburst          (S3_ARBURST),
+        .o_axi_rdata            (UART_axi_rdata),
+        .o_axi_rvalid           (UART_axi_rvalid),
+        .i_axi_rready           (S3_RREADY),
+        .o_axi_rlast            (UART_axi_rlast),
+        .i_axi_awaddr           (S3_AWADDR),
+        .i_axi_awvalid          (S3_AWVALID),
+        .o_axi_awready          (UART_axi_awready),
+        .i_axi_awlen            (S3_AWLEN),
+        .i_axi_awsize           (S3_AWSIZE),
+        .i_axi_awburst          (S3_AWBURST),
+        .i_axi_wdata            (S3_WDATA),
+        .i_axi_wvalid           (S3_WVALID),
+        .o_axi_wready           (UART_axi_wready),
+        .i_axi_wlast            (S3_WLAST),
+        .i_axi_wstrb            (S3_WSTRB),
+        .o_axi_bresp            (UART_axi_bresp),
+        .o_axi_bvalid           (UART_axi_bvalid),
+        .i_axi_bready           (S3_BREADY),
+
+        .o_tx_serial            (o_tx_serial),
+        .o_tx_done              (UART_tx_done),
+        .o_tx_busy              (UART_tx_busy),
+
+        .i_rx_serial            (i_rx_serial),
+        .o_rx_valid             (UART_rx_valid)
+    );
+
 endmodule

@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module IF_ID (
     input wire                  i_Clk,

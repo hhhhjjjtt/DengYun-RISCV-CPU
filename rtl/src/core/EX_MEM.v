@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 module EX_MEM (
     input wire                  i_Clk,
@@ -44,15 +44,15 @@ module EX_MEM (
             o_pc_addr           <= `ZeroAddr;
             o_inst_data         <= `NOP;
             o_wb_src            <= `WB_src_ALU;
-            o_regd_we           <= `WriteDisable;
+            o_regd_we           <= `Disable;
             o_regd_addr         <= `Reg0Addr;
             o_regd_data         <= `ZeroWord;
-            o_mem_we            <= `WriteDisable;
-            o_mem_re            <= `ReadDisable;
+            o_mem_we            <= `Disable;
+            o_mem_re            <= `Disable;
             o_mem_addr          <= `ZeroAddr;
             o_mem_wr_data_raw   <= `ZeroWord;
             o_mem_op_type       <= `Mem_op_word;
-            o_ex_mem_regd_we    <= `WriteDisable;
+            o_ex_mem_regd_we    <= `Disable;
             o_ex_mem_regd_addr  <= `Reg0Addr;
             o_ex_mem_regd_data  <= `ZeroWord;
         end
@@ -94,15 +94,15 @@ module EX_MEM (
                     o_pc_addr           <= `ZeroAddr;
                     o_inst_data         <= `NOP;
                     o_wb_src            <= `WB_src_ALU;
-                    o_regd_we           <= `WriteDisable;
+                    o_regd_we           <= `Disable;
                     o_regd_addr         <= `Reg0Addr;
                     o_regd_data         <= `ZeroWord;
-                    o_mem_we            <= `WriteDisable;
-                    o_mem_re            <= `ReadDisable;
+                    o_mem_we            <= `Disable;
+                    o_mem_re            <= `Disable;
                     o_mem_addr          <= `ZeroAddr;
                     o_mem_wr_data_raw   <= `ZeroWord;
                     o_mem_op_type       <= `Mem_op_word;
-                    o_ex_mem_regd_we    <= `WriteDisable;
+                    o_ex_mem_regd_we    <= `Disable;
                     o_ex_mem_regd_addr  <= `Reg0Addr;
                     o_ex_mem_regd_data  <= `ZeroWord;
                 end
