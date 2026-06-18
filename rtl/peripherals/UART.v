@@ -53,10 +53,10 @@ module UART (
     output reg          o_rx_valid
 );
 
-    localparam REG_TX_DATA  = 3'd0;
-    localparam REG_RX_DATA  = 3'd1;
-    localparam REG_STATUS   = 3'd2;
-    localparam REG_BAUD_DIV = 3'd3;
+    localparam OFFSET_TX_DATA  = 3'b000;
+    localparam OFFSET_RX_DATA  = 3'b001;
+    localparam OFFSET_STATUS   = 3'b010;
+    localparam OFFSET_BAUD_DIV = 3'b011;
 
     // ---- Shared registers ----
     reg [15:0] baud_div;
@@ -241,11 +241,11 @@ module UART (
     end
 
     // ---- AXI write path ----
-    reg        aw_pending;
-    reg [31:0] aw_addr_latch;
-    reg        w_pending;
-    reg [31:0] w_data_latch;
-    reg [3:0]  w_strb_latch;
+    reg         aw_pending;
+    reg[31:0]   aw_addr_latch;
+    reg         w_pending;
+    reg[31:0]   w_data_latch;
+    reg[3:0]    w_strb_latch;
 
     always @(posedge i_Clk) begin
         if (i_reset) begin
@@ -286,11 +286,11 @@ module UART (
                 o_axi_bvalid <= 1'b1;
                 o_axi_bresp  <= 2'b00;
                 case (aw_addr_latch[4:2])
-                    REG_TX_DATA: begin
+                    OFFSET_TX_DATA: begin
                         if (w_strb_latch[0]) tx_data_reg <= w_data_latch[7:0];
                         if (tx_idle) tx_start <= 1'b1;
                     end
-                    REG_BAUD_DIV: begin
+                    OFFSET_BAUD_DIV: begin
                         if (w_strb_latch[0]) baud_div[7:0]  <= w_data_latch[7:0];
                         if (w_strb_latch[1]) baud_div[15:8] <= w_data_latch[15:8];
                     end
@@ -322,16 +322,22 @@ module UART (
                 o_axi_rvalid  <= 1'b1;
                 o_axi_rlast   <= 1'b1;
                 case (i_axi_araddr[4:2])
-                    REG_TX_DATA: begin
+                    OFFSET_TX_DATA: begin
                         o_axi_rdata <= {24'd0, tx_data_reg};
                     end
-                    REG_RX_DATA: begin
+                    OFFSET_RX_DATA: begin
                         o_axi_rdata <= {24'd0, rx_data_reg};
                         rx_clear    <= 1'b1;
                     end
-                    REG_STATUS:   o_axi_rdata <= {30'd0, rx_valid, tx_idle};
-                    REG_BAUD_DIV: o_axi_rdata <= {16'd0, baud_div};
-                    default:      o_axi_rdata <= 32'd0;
+                    OFFSET_STATUS: begin
+                        o_axi_rdata <= {30'd0, rx_valid, tx_idle};
+                    end 
+                    OFFSET_BAUD_DIV: begin
+                        o_axi_rdata <= {16'd0, baud_div};
+                    end
+                    default: begin
+                        o_axi_rdata <= 32'd0;
+                    end
                 endcase
             end
 

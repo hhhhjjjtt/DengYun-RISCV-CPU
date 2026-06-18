@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 // ---- i-cache ----
 // cache size:      2kB

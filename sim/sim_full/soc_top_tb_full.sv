@@ -162,7 +162,7 @@ module soc_top_tb_full ();
         integer i;
         begin
             i = 0;
-            while((soc_top_0.CPU_0.Regs_0.regs[10] != 32'h00c0ffee) && (i < SIMULATION_END)) begin
+            while((soc_top_0.cpu_core_0.Regs_0.regs[10] != 32'h00c0ffee) && (i < SIMULATION_END)) begin
                 step();
                 i = i+1;
             end
@@ -174,11 +174,11 @@ module soc_top_tb_full ();
             if(numcycles > SIMULATION_END) begin
                 $display("!!!Error:test case %s does not terminate!", testcase);
             end
-            else if(soc_top_0.CPU_0.Regs_0.regs[10] == 32'h00c0ffee) begin
+            else if(soc_top_0.cpu_core_0.Regs_0.regs[10] == 32'h00c0ffee) begin
                 $display("OK:test case %s finshed OK at cycle %d.",
                         testcase, numcycles - 1);
             end
-            else if(soc_top_0.CPU_0.Regs_0.regs[10] == 32'hdeaddead) begin
+            else if(soc_top_0.cpu_core_0.Regs_0.regs[10] == 32'hdeaddead) begin
                 $display("!!!ERROR:test case %s finshed with error in cycle %d.",
                         testcase, numcycles - 1);
             end

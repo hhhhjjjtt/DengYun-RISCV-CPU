@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 // Register map (word-addressed via addr[4:2]):
 //   0x00  ENABLE    [`Num_IntSrc-1:0]  RW: bitmask of enabled sources
@@ -50,10 +50,10 @@ module PLIC (
     output wire                         o_external_int_pending
 );
 
-    localparam OFFSET_ENABLE   = 3'd0;
-    localparam OFFSET_PENDING  = 3'd1;
-    localparam OFFSET_CLAIM    = 3'd2;
-    localparam OFFSET_COMPLETE = 3'd3;
+    localparam OFFSET_ENABLE   = 3'b000;
+    localparam OFFSET_PENDING  = 3'b001;
+    localparam OFFSET_CLAIM    = 3'b010;
+    localparam OFFSET_COMPLETE = 3'b011;
 
     // Width needed to hold a source ID (e.g. 2 sources → 1 bit, 4 sources → 2 bits)
     localparam SRC_SEL_WIDTH = (`Num_IntSrc <= 1) ? 1 : $clog2(`Num_IntSrc);
@@ -109,10 +109,10 @@ module PLIC (
 
     // ---- AXI write path ----
     reg         aw_pending;
-    reg [31:0]  aw_addr_latch;
+    reg[31:0]   aw_addr_latch;
     reg         w_pending;
-    reg [31:0]  w_data_latch;
-    reg [3:0]   w_strb_latch;
+    reg[31:0]   w_data_latch;
+    reg[3:0]    w_strb_latch;
 
     always @(posedge i_Clk) begin
         if (i_reset) begin

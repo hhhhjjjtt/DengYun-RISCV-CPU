@@ -15,16 +15,6 @@
 `define InstAddrBus                     31:0
 `define DataAddrBus                     31:0
 
-// ----Address Mapping----
-`define REGION_SIZE                     32'h2000
-
-`define ROM_BASE                        32'h0000
-`define RAM_BASE                        32'h2000
-`define PLIC_BASE                       32'h4000
-`define UART_BASE                       32'h6000
-`define GPIO_BASE                       32'h8000
-`define SPI_BASE                        32'hA000
-
 // ----Register Address & Data----
 `define RegsNum                         32
 `define RegsAddrBus                     4:0
@@ -131,22 +121,17 @@
 `define funct3_csrrsi                   3'b110
 `define funct3_csrrci                   3'b111
 
-
 // ----EX Control----
-
 // input A      
 `define ALU_src_A_rs1                   1'b0
 `define ALU_src_A_pc                    1'b1
-
 // input B      
 `define ALU_src_B_rs2                   2'b00
 `define ALU_src_B_imm                   2'b01
 `define ALU_src_B_4                     2'b10
-
 // writeback source     
 `define WB_src_ALU                      1'b0
 `define WB_src_MEM                      1'b1
-
 // ALU ops
 `define ALU_op_add                      5'b00000
 `define ALU_op_sub                      5'b00001
@@ -167,7 +152,6 @@
 `define ALU_op_divu                     5'b10000
 `define ALU_op_rem                      5'b10001
 `define ALU_op_remu                     5'b10010
-
 // Branch Conditions
 `define Branch_none                     3'b000         // no jump
 `define Branch_jump                     3'b001         // unconditional jump to pc+imm
@@ -176,11 +160,9 @@
 `define Branch_jump_ne                  3'b101         // conditional jump not equal
 `define Branch_jump_l                   3'b110         // conditional jump less than
 `define Branch_jump_ge                  3'b111         // conditional jump greater than
-
 // rd write source
 `define MemtoReg_src_ALU                1'b0           // write to rd from ALU
 `define MemtoReg_src_Mem                1'b1           // write to rd from data RAM
-
 // memory operation length & type
 `define MemOpTypeBus                    2:0
 `define Mem_op_byte                     3'b000         // 1 byte, signed
@@ -188,7 +170,6 @@
 `define Mem_op_word                     3'b010         // 4 bytes
 `define Mem_op_ubyte                    3'b100         // 1 byte, unsigned
 `define Mem_op_uhalf                    3'b101         // 2 bytes, unsigned
-
 // memory write strobe
 `define StrbBus                         3:0
 
@@ -224,5 +205,15 @@
 
 // ---- Peripherals ----
 `define Num_IntSrc                      4'd2
+
+// ----Address Mapping----
+`define REGION_SIZE                     32'h2000
+
+`define ROM_BASE                        32'h0000
+`define RAM_BASE                        32'h2000
+`define PLIC_BASE                       32'h4000
+`define UART_BASE                       32'h6000
+`define GPIO_BASE                       32'h8000
+`define SPI_BASE                        32'hA000
 
 `endif

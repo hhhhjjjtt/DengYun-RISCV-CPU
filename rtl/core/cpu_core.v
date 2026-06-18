@@ -1,6 +1,6 @@
 `include "../defines.v"
 
-module CPU (
+module cpu_core (
     input wire                  i_Clk,
     input wire                  i_reset,
 

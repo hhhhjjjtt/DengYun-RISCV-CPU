@@ -1,4 +1,4 @@
-`include "defines.v"
+`include "../defines.v"
 
 // ---- AXI4 Interconnect ----
 // M0→S0 direct, M2→S2,S3 based on address, M1+M3→S1 arbitrated

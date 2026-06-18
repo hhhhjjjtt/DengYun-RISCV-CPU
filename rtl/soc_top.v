@@ -14,19 +14,19 @@ module soc_top #(
     input wire                  i_timer_int_pending     // temporary, will come from Timer's interrupt wire
 );
 
-    // ---- CPU Outputs ----
-    wire                CPU_imem_valid;
-    wire[`InstAddrBus]  CPU_imem_rd_addr;
+    // ---- cpu_core Outputs ----
+    wire                cpu_core_imem_valid;
+    wire[`InstAddrBus]  cpu_core_imem_rd_addr;
 
-    wire                CPU_dcache_en;
-    wire                CPU_mmio_en;
-    wire                CPU_dmem_valid;
-    wire                CPU_dmem_rd_en;
-    wire[`DataAddrBus]  CPU_dmem_rd_addr;
-    wire                CPU_dmem_wr_en;
-    wire[`StrbBus]      CPU_dmem_wr_strb;
-    wire[`DataAddrBus]  CPU_dmem_wr_addr;
-    wire[`DataBus]      CPU_dmem_wr_data;
+    wire                cpu_core_dcache_en;
+    wire                cpu_core_mmio_en;
+    wire                cpu_core_dmem_valid;
+    wire                cpu_core_dmem_rd_en;
+    wire[`DataAddrBus]  cpu_core_dmem_rd_addr;
+    wire                cpu_core_dmem_wr_en;
+    wire[`StrbBus]      cpu_core_dmem_wr_strb;
+    wire[`DataAddrBus]  cpu_core_dmem_wr_addr;
+    wire[`DataBus]      cpu_core_dmem_wr_data;
 
     // ---- I_Cache Outputs ----
     wire                I_Cache_imem_ready;
@@ -236,38 +236,38 @@ module soc_top #(
 
     wire                PLIC_external_int_pending;
 
-    CPU CPU_0 (
+    cpu_core cpu_core_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
         .i_timer_int_pending    (i_timer_int_pending),
         .i_external_int_pending (PLIC_external_int_pending),
 
-        .o_imem_valid           (CPU_imem_valid),
+        .o_imem_valid           (cpu_core_imem_valid),
         .i_imem_ready           (I_Cache_imem_ready),
-        .o_imem_rd_addr         (CPU_imem_rd_addr),
+        .o_imem_rd_addr         (cpu_core_imem_rd_addr),
         .i_imem_rd_data         (I_Cache_imem_rd_data),
 
-        .o_dcache_en            (CPU_dcache_en),
-        .o_mmio_en              (CPU_mmio_en),
-        .o_dmem_valid           (CPU_dmem_valid),
+        .o_dcache_en            (cpu_core_dcache_en),
+        .o_mmio_en              (cpu_core_mmio_en),
+        .o_dmem_valid           (cpu_core_dmem_valid),
         .i_dmem_ready           (D_Cache_dmem_ready | MMIO_Port_dmem_ready),
-        .o_dmem_rd_en           (CPU_dmem_rd_en),
-        .o_dmem_rd_addr         (CPU_dmem_rd_addr),
-        .i_dmem_rd_data         (CPU_dcache_en ? D_Cache_dmem_rd_data : MMIO_Port_dmem_rd_data),
-        .o_dmem_wr_en           (CPU_dmem_wr_en),
-        .o_dmem_wr_strb         (CPU_dmem_wr_strb),
-        .o_dmem_wr_addr         (CPU_dmem_wr_addr),
-        .o_dmem_wr_data         (CPU_dmem_wr_data)
+        .o_dmem_rd_en           (cpu_core_dmem_rd_en),
+        .o_dmem_rd_addr         (cpu_core_dmem_rd_addr),
+        .i_dmem_rd_data         (cpu_core_dcache_en ? D_Cache_dmem_rd_data : MMIO_Port_dmem_rd_data),
+        .o_dmem_wr_en           (cpu_core_dmem_wr_en),
+        .o_dmem_wr_strb         (cpu_core_dmem_wr_strb),
+        .o_dmem_wr_addr         (cpu_core_dmem_wr_addr),
+        .o_dmem_wr_data         (cpu_core_dmem_wr_data)
     );
 
     I_Cache I_Cache_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
-        .i_imem_valid           (CPU_imem_valid),
+        .i_imem_valid           (cpu_core_imem_valid),
         .o_imem_ready           (I_Cache_imem_ready),
-        .i_imem_rd_addr         (CPU_imem_rd_addr),
+        .i_imem_rd_addr         (cpu_core_imem_rd_addr),
         .o_imem_rd_data         (I_Cache_imem_rd_data),
 
         .o_axi_araddr           (I_Cache_axi_araddr),
@@ -287,15 +287,15 @@ module soc_top #(
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
-        .i_dmem_valid           (CPU_dmem_valid && CPU_dcache_en),
+        .i_dmem_valid           (cpu_core_dmem_valid && cpu_core_dcache_en),
         .o_dmem_ready           (D_Cache_dmem_ready),
-        .i_dmem_rd_en           (CPU_dmem_rd_en),
-        .i_dmem_rd_addr         (CPU_dmem_rd_addr),
+        .i_dmem_rd_en           (cpu_core_dmem_rd_en),
+        .i_dmem_rd_addr         (cpu_core_dmem_rd_addr),
         .o_dmem_rd_data         (D_Cache_dmem_rd_data),
-        .i_dmem_wr_en           (CPU_dmem_wr_en),
-        .i_dmem_wr_strb         (CPU_dmem_wr_strb),
-        .i_dmem_wr_addr         (CPU_dmem_wr_addr),
-        .i_dmem_wr_data         (CPU_dmem_wr_data),
+        .i_dmem_wr_en           (cpu_core_dmem_wr_en),
+        .i_dmem_wr_strb         (cpu_core_dmem_wr_strb),
+        .i_dmem_wr_addr         (cpu_core_dmem_wr_addr),
+        .i_dmem_wr_data         (cpu_core_dmem_wr_data),
 
         .o_axi_araddr           (D_Cache_axi_araddr),
         .o_axi_arvalid          (D_Cache_axi_arvalid),
@@ -331,15 +331,15 @@ module soc_top #(
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
-        .i_dmem_valid           (CPU_dmem_valid && CPU_mmio_en),
+        .i_dmem_valid           (cpu_core_dmem_valid && cpu_core_mmio_en),
         .o_dmem_ready           (MMIO_Port_dmem_ready),
-        .i_dmem_rd_en           (CPU_dmem_rd_en),
-        .i_dmem_rd_addr         (CPU_dmem_rd_addr),
+        .i_dmem_rd_en           (cpu_core_dmem_rd_en),
+        .i_dmem_rd_addr         (cpu_core_dmem_rd_addr),
         .o_dmem_rd_data         (MMIO_Port_dmem_rd_data),
-        .i_dmem_wr_en           (CPU_dmem_wr_en),
-        .i_dmem_wr_strb         (CPU_dmem_wr_strb),
-        .i_dmem_wr_addr         (CPU_dmem_wr_addr),
-        .i_dmem_wr_data         (CPU_dmem_wr_data),
+        .i_dmem_wr_en           (cpu_core_dmem_wr_en),
+        .i_dmem_wr_strb         (cpu_core_dmem_wr_strb),
+        .i_dmem_wr_addr         (cpu_core_dmem_wr_addr),
+        .i_dmem_wr_data         (cpu_core_dmem_wr_data),
 
         .o_axi_araddr           (MMIO_Port_axi_araddr),
         .o_axi_arvalid          (MMIO_Port_axi_arvalid),

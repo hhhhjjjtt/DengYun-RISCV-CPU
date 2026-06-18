@@ -125,11 +125,11 @@ module uart_loop_tb;
         // ---- step 3: give CPU time to write a0, then check it ----
         stepn(100);
 
-        if (dut.CPU_0.Regs_0.regs[10] === 32'h00c0ffee) begin
+        if (dut.cpu_core_0.Regs_0.regs[10] === 32'h00c0ffee) begin
             $display("OK  a0 = 0x00c0ffee (software pass)");
             checks_passed = checks_passed + 1;
         end else begin
-            $display("ERR a0 = 0x%08h (expected 0x00c0ffee)", dut.CPU_0.Regs_0.regs[10]);
+            $display("ERR a0 = 0x%08h (expected 0x00c0ffee)", dut.cpu_core_0.Regs_0.regs[10]);
         end
 
         // ---- result ----
