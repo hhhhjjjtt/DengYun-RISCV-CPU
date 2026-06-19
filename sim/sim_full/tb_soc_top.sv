@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module soc_top_tb_full ();
+module tb_soc_top ();
 
     localparam CLK_PERIOD       = 20;
     localparam SIMULATION_END   = 20000;
@@ -10,15 +10,12 @@ module soc_top_tb_full ();
     
     reg     reg_rx_serial;
     wire    wire_tx_serial;
-    
-    reg     reg_timer_int_pending;
 
     soc_top soc_top_0 (
         .i_Clk                  (reg_Clk),
         .i_reset                (reg_reset),
         .o_tx_serial            (wire_tx_serial),
-        .i_rx_serial            (reg_rx_serial),
-        .i_timer_int_pending    (reg_timer_int_pending)
+        .i_rx_serial            (reg_rx_serial)
     );
 
     string  testcase;

@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-// uart_loop_tb.sv — UART loopback testbench
+// tb_uart_loop.sv — UART loopback testbench
 //
 // Checks:
 //   1. CPU receives TEST_BYTE via RX interrupt and validates it (software check).
@@ -9,7 +9,7 @@
 //
 // BAUD_DIV must match the #define BAUD_DIV_SIM in uart_loop.S.
 
-module uart_loop_tb;
+module tb_uart_loop;
 
     localparam CLK_PERIOD = 20;       // 100 MHz → 20 ns
     localparam BAUD_DIV   = 10;       // cycles per UART bit (must match .S)
@@ -24,8 +24,7 @@ module uart_loop_tb;
         .i_Clk               (clk),
         .i_reset             (reset),
         .i_rx_serial         (reg_rx),
-        .o_tx_serial         (wire_tx),
-        .i_timer_int_pending (1'b0)
+        .o_tx_serial         (wire_tx)
     );
 
     // ---- clock ----

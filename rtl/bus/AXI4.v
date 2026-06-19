@@ -2,14 +2,14 @@
 
 // ---- AXI4 Interconnect ----
 // M0→S0 direct, M2→S2,S3 based on address, M1+M3→S1 arbitrated
-// Masters: M0=i_cache(AR+R), M1=d_cache(full), M2=mmio_port(full), M3=DMA stub(full)
-// Slaves:  S0=ROM(AR+R), S1=RAM(full), S2=PLIC(full), S3=UART(full)
+// Masters: M0=i_cache(AXI4;AR+R), M1=d_cache(AXI4), M2=mmio_port(AXI4-Lite), M3=DMA stub(AXI4)
+// Slaves:  S0=ROM(AXI4;AR+R), S1=RAM(AXI4), S2=PLIC(AXI4-Lite), S3=UART(AXI4-Lite), S6=CLINT(AXI4-Lite)
 
 module AXI4 (
     input wire          i_Clk,
     input wire          i_reset,
 
-    // ---- Master 0: i_cache (AR + R only) ----
+    // ---- Master 0: i_cache (AXI4; AR + R only) ----
     input wire[31:0]    M0_ARADDR,
     input wire          M0_ARVALID,
     output reg          M0_ARREADY,
@@ -21,7 +21,7 @@ module AXI4 (
     input wire          M0_RREADY,
     output reg          M0_RLAST,
 
-    // ---- Master 1: d_cache (full AXI) ----
+    // ---- Master 1: d_cache (AXI4) ----
     input wire[31:0]    M1_ARADDR,
     input wire          M1_ARVALID,
     output reg          M1_ARREADY,
@@ -47,7 +47,7 @@ module AXI4 (
     output reg          M1_BVALID,
     input wire          M1_BREADY,
 
-    // ---- Master 2: mmio_port (full AXI) ----
+    // ---- Master 2: mmio_port (AXI4-Lite) ----
     input wire[31:0]    M2_ARADDR,
     input wire          M2_ARVALID,
     output reg          M2_ARREADY,
@@ -73,7 +73,7 @@ module AXI4 (
     output reg          M2_BVALID,
     input wire          M2_BREADY,
 
-    // ---- Master 3: DMA stub (full AXI, tie all inputs to 0 in cpu_top) ----
+    // ---- Master 3: DMA stub (AXI4, tie all inputs to 0 in cpu_top) ----
     input wire[31:0]    M3_ARADDR,
     input wire          M3_ARVALID,
     output reg          M3_ARREADY,
@@ -99,7 +99,7 @@ module AXI4 (
     output reg          M3_BVALID,
     input wire          M3_BREADY,
 
-    // ---- Slave 0: ROM (AR + R only) ----
+    // ---- Slave 0: ROM (AXI4; AR + R only) ----
     output reg[31:0]    S0_ARADDR,
     output reg          S0_ARVALID,
     input wire          S0_ARREADY,
@@ -111,7 +111,7 @@ module AXI4 (
     output reg          S0_RREADY,
     input wire          S0_RLAST,
 
-    // ---- Slave 1: RAM (full AXI) ----
+    // ---- Slave 1: RAM (AXI4) ----
     output reg[31:0]    S1_ARADDR,
     output reg          S1_ARVALID,
     input wire          S1_ARREADY,
@@ -137,7 +137,7 @@ module AXI4 (
     input wire          S1_BVALID,
     output reg          S1_BREADY,
 
-    // ---- Slave 2: PLIC (full AXI) ----
+    // ---- Slave 2: PLIC (AXI4-Lite) ----
     output reg[31:0]    S2_ARADDR,
     output reg          S2_ARVALID,
     input wire          S2_ARREADY,
@@ -163,7 +163,7 @@ module AXI4 (
     input wire          S2_BVALID,
     output reg          S2_BREADY,
 
-    // ---- Slave 3: UART (full AXI) ----
+    // ---- Slave 3: UART (AXI4-Lite) ----
     output reg[31:0]    S3_ARADDR,
     output reg          S3_ARVALID,
     input wire          S3_ARREADY,
@@ -187,7 +187,33 @@ module AXI4 (
     output reg[3:0]     S3_WSTRB,
     input wire[1:0]     S3_BRESP,
     input wire          S3_BVALID,
-    output reg          S3_BREADY
+    output reg          S3_BREADY,
+
+    // ---- Slave 6: CLINT (AXI4-Lite) ----
+    output reg[31:0]    S6_ARADDR,
+    output reg          S6_ARVALID,
+    input wire          S6_ARREADY,
+    output reg[7:0]     S6_ARLEN,
+    output reg[2:0]     S6_ARSIZE,
+    output reg[1:0]     S6_ARBURST,
+    input wire[31:0]    S6_RDATA,
+    input wire          S6_RVALID,
+    output reg          S6_RREADY,
+    input wire          S6_RLAST,
+    output reg[31:0]    S6_AWADDR,
+    output reg          S6_AWVALID,
+    input wire          S6_AWREADY,
+    output reg[7:0]     S6_AWLEN,
+    output reg[2:0]     S6_AWSIZE,
+    output reg[1:0]     S6_AWBURST,
+    output reg[31:0]    S6_WDATA,
+    output reg          S6_WVALID,
+    input wire          S6_WREADY,
+    output reg          S6_WLAST,
+    output reg[3:0]     S6_WSTRB,
+    input wire[1:0]     S6_BRESP,
+    input wire          S6_BVALID,
+    output reg          S6_BREADY
 );
 
     // M0 <--> S0 (i_cache <--> ROM)
@@ -204,7 +230,7 @@ module AXI4 (
         M0_RLAST   = S0_RLAST;
     end
 
-    // M2 <--> S2/S3 (mmio <--> (PLIC)/(UART))
+    // M2 <--> S2/S3/S6 (mmio <--> (PLIC)/(UART)/(CLINT))
     always @(*) begin
         // AR
         M2_ARREADY = 1'b0;
@@ -218,12 +244,18 @@ module AXI4 (
         S3_ARLEN   = M2_ARLEN;
         S3_ARSIZE  = M2_ARSIZE;
         S3_ARBURST = M2_ARBURST;
+        S6_ARADDR  = M2_ARADDR;
+        S6_ARVALID = 1'b0;
+        S6_ARLEN   = M2_ARLEN;
+        S6_ARSIZE  = M2_ARSIZE;
+        S6_ARBURST = M2_ARBURST;
         // R
         M2_RDATA   = S2_RDATA;
         M2_RVALID  = 1'b0;
         M2_RLAST   = S2_RLAST;
         S2_RREADY  = 1'b0;
         S3_RREADY  = 1'b0;
+        S6_RREADY  = 1'b0;
         // AW
         M2_AWREADY = 1'b0;
         S2_AWADDR  = M2_AWADDR;
@@ -236,6 +268,11 @@ module AXI4 (
         S3_AWLEN   = M2_AWLEN;
         S3_AWSIZE  = M2_AWSIZE;
         S3_AWBURST = M2_AWBURST;
+        S6_AWADDR  = M2_AWADDR;
+        S6_AWVALID = 1'b0;
+        S6_AWLEN   = M2_AWLEN;
+        S6_AWSIZE  = M2_AWSIZE;
+        S6_AWBURST = M2_AWBURST;
         // W
         M2_WREADY  = 1'b0;
         S2_WDATA   = M2_WDATA;
@@ -246,11 +283,18 @@ module AXI4 (
         S3_WVALID  = 1'b0;
         S3_WLAST   = M2_WLAST;
         S3_WSTRB   = M2_WSTRB;
+        S6_WDATA   = M2_WDATA;
+        S6_WVALID  = 1'b0;
+        S6_WLAST   = M2_WLAST;
+        S6_WSTRB   = M2_WSTRB;
         // B
         M2_BRESP   = S2_BRESP;
         M2_BVALID  = 1'b0;
         S2_BREADY  = 1'b0;
         S3_BREADY  = 1'b0;
+        S6_BREADY  = 1'b0;
+
+        // Read routing 
         if (M2_ARADDR >= `PLIC_BASE && M2_ARADDR < `PLIC_BASE + `REGION_SIZE) begin
             M2_RDATA   = S2_RDATA;
             S2_ARVALID = M2_ARVALID;
@@ -258,7 +302,7 @@ module AXI4 (
             M2_RVALID  = S2_RVALID;
             S2_RREADY  = M2_RREADY;
         end
-        else begin
+        else if (M2_ARADDR >= `UART_BASE && M2_ARADDR < `UART_BASE + `REGION_SIZE) begin
             M2_RDATA   = S3_RDATA;
             M2_RLAST   = S3_RLAST;
             S3_ARVALID = M2_ARVALID;
@@ -266,6 +310,16 @@ module AXI4 (
             M2_RVALID  = S3_RVALID;
             S3_RREADY  = M2_RREADY;
         end
+        else if (M2_ARADDR >= `CLINT_BASE && M2_ARADDR < `CLINT_BASE + `REGION_SIZE) begin
+            M2_RDATA   = S6_RDATA;
+            M2_RLAST   = S6_RLAST;
+            S6_ARVALID = M2_ARVALID;
+            M2_ARREADY = S6_ARREADY;
+            M2_RVALID  = S6_RVALID;
+            S6_RREADY  = M2_RREADY;
+        end
+        
+        // Write routing 
         if (M2_AWADDR >= `PLIC_BASE && M2_AWADDR < `PLIC_BASE + `REGION_SIZE) begin
             S2_AWVALID = M2_AWVALID;
             M2_AWREADY = S2_AWREADY;
@@ -274,7 +328,7 @@ module AXI4 (
             M2_BVALID  = S2_BVALID;
             S2_BREADY  = M2_BREADY;
         end
-        else begin
+        else if (M2_AWADDR >= `UART_BASE && M2_AWADDR < `UART_BASE + `REGION_SIZE) begin
             S3_AWVALID = M2_AWVALID;
             M2_AWREADY = S3_AWREADY;
             S3_WVALID  = M2_WVALID;
@@ -282,6 +336,15 @@ module AXI4 (
             M2_BRESP   = S3_BRESP;
             M2_BVALID  = S3_BVALID;
             S3_BREADY  = M2_BREADY;
+        end
+        else if (M2_AWADDR >= `CLINT_BASE && M2_AWADDR < `CLINT_BASE + `REGION_SIZE) begin
+            S6_AWVALID = M2_AWVALID;
+            M2_AWREADY = S6_AWREADY;
+            S6_WVALID  = M2_WVALID;
+            M2_WREADY  = S6_WREADY;
+            M2_BRESP   = S6_BRESP;
+            M2_BVALID  = S6_BVALID;
+            S6_BREADY  = M2_BREADY;
         end
     end
 

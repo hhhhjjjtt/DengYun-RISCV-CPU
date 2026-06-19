@@ -215,5 +215,6 @@
 `define UART_BASE                       32'h6000
 `define GPIO_BASE                       32'h8000
 `define SPI_BASE                        32'hA000
+`define CLINT_BASE                      32'hC000
 
 `endif

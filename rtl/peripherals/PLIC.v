@@ -19,9 +19,9 @@ module PLIC (
     input wire[31:0]                    i_axi_araddr,
     input wire                          i_axi_arvalid,
     output reg                          o_axi_arready,
-    input wire[7:0]                     i_axi_arlen,
-    input wire[2:0]                     i_axi_arsize,
-    input wire[1:0]                     i_axi_arburst,
+    input wire[7:0]                     i_axi_arlen,        // unused
+    input wire[2:0]                     i_axi_arsize,       // unused
+    input wire[1:0]                     i_axi_arburst,      // unused
     // AXI slave — R channel
     output reg[31:0]                    o_axi_rdata,
     output reg                          o_axi_rvalid,
@@ -31,19 +31,19 @@ module PLIC (
     input wire[31:0]                    i_axi_awaddr,
     input wire                          i_axi_awvalid,
     output reg                          o_axi_awready,
-    input wire[7:0]                     i_axi_awlen,
-    input wire[2:0]                     i_axi_awsize,
-    input wire[1:0]                     i_axi_awburst,
+    input wire[7:0]                     i_axi_awlen,        // unused
+    input wire[2:0]                     i_axi_awsize,       // unused
+    input wire[1:0]                     i_axi_awburst,      // unused
     // AXI slave — W channel
     input wire[31:0]                    i_axi_wdata,
     input wire                          i_axi_wvalid,
     output reg                          o_axi_wready,
-    input wire                          i_axi_wlast,
+    input wire                          i_axi_wlast,        // unused
     input wire[3:0]                     i_axi_wstrb,
     // AXI slave — B channel
     output reg[1:0]                     o_axi_bresp,
     output reg                          o_axi_bvalid,
-    input wire                          i_axi_bready,
+    input wire                          i_axi_bready,       // unused
 
     input wire[`Num_IntSrc-1:0]         i_src,
 
@@ -170,7 +170,7 @@ module PLIC (
     end
 
     // ---- AXI read path ----
-    always @(posedge i_Clk) begin
+    always @(posedge i_Clk or posedge i_reset) begin
         if (i_reset) begin
             o_axi_arready <= 1'b0;
             o_axi_rvalid  <= 1'b0;

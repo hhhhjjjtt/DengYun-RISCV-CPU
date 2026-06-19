@@ -10,6 +10,7 @@ module IF_ID (
 
     // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_ctrl_flag,
+    input wire[`InstAddrBus]    i_flush_pc,     // PC to stamp into bubble on flush
 
     // to ID
     output reg[`InstAddrBus]    o_pc_addr,
@@ -32,7 +33,7 @@ module IF_ID (
                     o_inst_data <= o_inst_data;
                 end
                 `ctrl_flush: begin
-                    o_pc_addr <= `ZeroAddr;
+                    o_pc_addr <= i_flush_pc;
                     o_inst_data <= `NOP;
                 end
                 default: begin

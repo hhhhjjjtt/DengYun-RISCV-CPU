@@ -275,7 +275,8 @@ module cpu_core (
         .i_inst_data            (if_0_w_inst_data),
         
         .i_ctrl_flag            (ctrl_unit_0_w_if_id_ctrl),
-        
+        .i_flush_pc             (ctrl_unit_0_w_jump_addr),
+
         .o_pc_addr              (if_id_0_w_pc_addr),
         .o_inst_data            (if_id_0_w_inst_dat)
     );
@@ -396,7 +397,8 @@ module cpu_core (
         .i_trap_cause           (id_0_w_trap_cause),
 
         .i_ctrl_flag            (ctrl_unit_0_w_id_ex_ctrl),
-        
+        .i_flush_pc             (ctrl_unit_0_w_jump_addr),
+
         .o_pc_addr              (id_ex_0_w_pc_addr),    
         .o_inst_data            (id_ex_0_w_inst_data),  
         .o_reg1_data            (id_ex_0_w_reg1_data),  

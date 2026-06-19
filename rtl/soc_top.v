@@ -9,9 +9,7 @@ module soc_top #(
 
     // Peripheral: UART
     output wire                 o_tx_serial,
-    input wire                  i_rx_serial,
-
-    input wire                  i_timer_int_pending     // temporary, will come from Timer's interrupt wire
+    input wire                  i_rx_serial
 );
 
     // ---- cpu_core Outputs ----
@@ -174,11 +172,29 @@ module soc_top #(
     wire                S3_AWVALID;
     wire[7:0]           S3_AWLEN;
     wire[2:0]           S3_AWSIZE;
+    wire[1:0]           S3_AWBURST;
     wire[31:0]          S3_WDATA;
     wire                S3_WVALID;
     wire                S3_WLAST;
     wire[3:0]           S3_WSTRB;
     wire                S3_BREADY;
+
+    wire[31:0]          S6_ARADDR;
+    wire                S6_ARVALID;
+    wire[7:0]           S6_ARLEN;
+    wire[2:0]           S6_ARSIZE;
+    wire[1:0]           S6_ARBURST;
+    wire                S6_RREADY;
+    wire[31:0]          S6_AWADDR;
+    wire                S6_AWVALID;
+    wire[7:0]           S6_AWLEN;
+    wire[2:0]           S6_AWSIZE;
+    wire[1:0]           S6_AWBURST;
+    wire[31:0]          S6_WDATA;
+    wire                S6_WVALID;
+    wire                S6_WLAST;
+    wire[3:0]           S6_WSTRB;
+    wire                S6_BREADY;
 
     // ---- ROM Outputs ----
     wire                ROM_axi_arready;
@@ -219,6 +235,22 @@ module soc_top #(
     wire                UART_tx_busy;
 
     wire                UART_rx_valid;
+
+    // ---- CLINT Outputs ----
+    wire                CLINT_axi_arready;
+
+    wire[31:0]          CLINT_axi_rdata;
+    wire                CLINT_axi_rvalid;
+    wire                CLINT_axi_rlast;
+
+    wire                CLINT_axi_awready;
+
+    wire                CLINT_axi_wready;
+
+    wire[1:0]           CLINT_axi_bresp;
+    wire                CLINT_axi_bvalid;
+
+    wire                CLINT_timer_int_pending;
     
     // ---- PLIC Outputs ----
     wire                PLIC_axi_arready;
@@ -240,7 +272,7 @@ module soc_top #(
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
 
-        .i_timer_int_pending    (i_timer_int_pending),
+        .i_timer_int_pending    (CLINT_timer_int_pending),
         .i_external_int_pending (PLIC_external_int_pending),
 
         .o_imem_valid           (cpu_core_imem_valid),
@@ -550,7 +582,33 @@ module soc_top #(
         .S3_WSTRB               (S3_WSTRB),
         .S3_BRESP               (UART_axi_bresp),
         .S3_BVALID              (UART_axi_bvalid),
-        .S3_BREADY              (S3_BREADY)
+        .S3_BREADY              (S3_BREADY),
+
+        // CLINT
+        .S6_ARADDR              (S6_ARADDR),
+        .S6_ARVALID             (S6_ARVALID),
+        .S6_ARREADY             (CLINT_axi_arready),
+        .S6_ARLEN               (S6_ARLEN),
+        .S6_ARSIZE              (S6_ARSIZE),
+        .S6_ARBURST             (S6_ARBURST),
+        .S6_RDATA               (CLINT_axi_rdata),
+        .S6_RVALID              (CLINT_axi_rvalid),
+        .S6_RREADY              (S6_RREADY),
+        .S6_RLAST               (CLINT_axi_rlast),
+        .S6_AWADDR              (S6_AWADDR),
+        .S6_AWVALID             (S6_AWVALID),
+        .S6_AWREADY             (CLINT_axi_awready),
+        .S6_AWLEN               (S6_AWLEN),
+        .S6_AWSIZE              (S6_AWSIZE),
+        .S6_AWBURST             (S6_AWBURST),
+        .S6_WDATA               (S6_WDATA),
+        .S6_WVALID              (S6_WVALID),
+        .S6_WREADY              (CLINT_axi_wready),
+        .S6_WLAST               (S6_WLAST),
+        .S6_WSTRB               (S6_WSTRB),
+        .S6_BRESP               (CLINT_axi_bresp),
+        .S6_BVALID              (CLINT_axi_bvalid),
+        .S6_BREADY              (S6_BREADY)
     );
 
     ROM #(
@@ -678,6 +736,38 @@ module soc_top #(
 
         .i_rx_serial            (i_rx_serial),
         .o_rx_valid             (UART_rx_valid)
+    );
+
+    CLINT CLINT_0 (
+        .i_Clk                  (i_Clk),
+        .i_reset                (i_reset),
+
+        .i_axi_araddr           (S6_ARADDR),
+        .i_axi_arvalid          (S6_ARVALID),
+        .o_axi_arready          (CLINT_axi_arready),
+        .i_axi_arlen            (S6_ARLEN),
+        .i_axi_arsize           (S6_ARSIZE),
+        .i_axi_arburst          (S6_ARBURST),
+        .o_axi_rdata            (CLINT_axi_rdata),
+        .o_axi_rvalid           (CLINT_axi_rvalid),
+        .i_axi_rready           (S6_RREADY),
+        .o_axi_rlast            (CLINT_axi_rlast),
+        .i_axi_awaddr           (S6_AWADDR),
+        .i_axi_awvalid          (S6_AWVALID),
+        .o_axi_awready          (CLINT_axi_awready),
+        .i_axi_awlen            (S6_AWLEN),
+        .i_axi_awsize           (S6_AWSIZE),
+        .i_axi_awburst          (S6_AWBURST),
+        .i_axi_wdata            (S6_WDATA),
+        .i_axi_wvalid           (S6_WVALID),
+        .o_axi_wready           (CLINT_axi_wready),
+        .i_axi_wlast            (S6_WLAST),
+        .i_axi_wstrb            (S6_WSTRB),
+        .o_axi_bresp            (CLINT_axi_bresp),
+        .o_axi_bvalid           (CLINT_axi_bvalid),
+        .i_axi_bready           (S6_BREADY),
+
+        .o_timer_int_pending    (CLINT_timer_int_pending)
     );
 
 endmodule

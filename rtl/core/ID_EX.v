@@ -34,6 +34,7 @@ module ID_EX (
 
     // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_ctrl_flag,
+    input wire[`InstAddrBus]    i_flush_pc,     // PC to stamp into bubble on flush
 
     // to EX
     output reg[`InstAddrBus]    o_pc_addr,    
@@ -166,7 +167,7 @@ module ID_EX (
                     o_id_ex_regd_addr   <= o_id_ex_regd_addr;
                 end
                 `ctrl_flush: begin
-                    o_pc_addr           <= `ZeroAddr;
+                    o_pc_addr           <= i_flush_pc;
                     o_inst_data         <= `NOP;
                     o_reg1_data         <= `ZeroWord;
                     o_reg1_addr         <= `Reg0Addr;
