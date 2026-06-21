@@ -43,7 +43,7 @@ module PLIC (
     // AXI slave — B channel
     output reg[1:0]                     o_axi_bresp,
     output reg                          o_axi_bvalid,
-    input wire                          i_axi_bready,       // unused
+    input wire                          i_axi_bready,
 
     input wire[`Num_IntSrc-1:0]         i_src,
 
@@ -89,7 +89,7 @@ module PLIC (
     // ---- Pending register ----
     // Set on rising edge of source; cleared by CLAIM read or COMPLETE write.
     // Both clear strobes arrive from the AXI paths below.
-    always @(posedge i_Clk) begin
+    always @(posedge i_Clk or posedge i_reset) begin
         if (i_reset) begin
             r_pending  <= {`Num_IntSrc{1'b0}};
             r_src_prev <= {`Num_IntSrc{1'b0}};
@@ -114,7 +114,7 @@ module PLIC (
     reg[31:0]   w_data_latch;
     reg[3:0]    w_strb_latch;
 
-    always @(posedge i_Clk) begin
+    always @(posedge i_Clk or posedge i_reset) begin
         if (i_reset) begin
             o_axi_awready  <= 1'b0;
             o_axi_wready   <= 1'b0;

@@ -42,7 +42,7 @@ module RAM #(
     input wire          i_axi_bready
 );
 
-    reg [`DataBus] rams [0:`DataAddrDepth-1];
+    (* ram_style = "block" *) reg [`DataBus] rams [0:`DataAddrDepth-1];
 
     integer i;
     initial begin

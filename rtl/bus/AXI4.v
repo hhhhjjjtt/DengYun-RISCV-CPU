@@ -189,6 +189,32 @@ module AXI4 (
     input wire          S3_BVALID,
     output reg          S3_BREADY,
 
+    // ---- Slave 4: GPIO (AXI4-Lite) ----
+    output reg[31:0]    S4_ARADDR,
+    output reg          S4_ARVALID,
+    input wire          S4_ARREADY,
+    output reg[7:0]     S4_ARLEN,
+    output reg[2:0]     S4_ARSIZE,
+    output reg[1:0]     S4_ARBURST,
+    input wire[31:0]    S4_RDATA,
+    input wire          S4_RVALID,
+    output reg          S4_RREADY,
+    input wire          S4_RLAST,
+    output reg[31:0]    S4_AWADDR,
+    output reg          S4_AWVALID,
+    input wire          S4_AWREADY,
+    output reg[7:0]     S4_AWLEN,
+    output reg[2:0]     S4_AWSIZE,
+    output reg[1:0]     S4_AWBURST,
+    output reg[31:0]    S4_WDATA,
+    output reg          S4_WVALID,
+    input wire          S4_WREADY,
+    output reg          S4_WLAST,
+    output reg[3:0]     S4_WSTRB,
+    input wire[1:0]     S4_BRESP,
+    input wire          S4_BVALID,
+    output reg          S4_BREADY,
+
     // ---- Slave 6: CLINT (AXI4-Lite) ----
     output reg[31:0]    S6_ARADDR,
     output reg          S6_ARVALID,
@@ -230,7 +256,7 @@ module AXI4 (
         M0_RLAST   = S0_RLAST;
     end
 
-    // M2 <--> S2/S3/S6 (mmio <--> (PLIC)/(UART)/(CLINT))
+    // M2 <--> S2/S3/S4/S6 (mmio <--> PLIC/UART/GPIO/CLINT)
     always @(*) begin
         // AR
         M2_ARREADY = 1'b0;
@@ -244,6 +270,11 @@ module AXI4 (
         S3_ARLEN   = M2_ARLEN;
         S3_ARSIZE  = M2_ARSIZE;
         S3_ARBURST = M2_ARBURST;
+        S4_ARADDR  = M2_ARADDR;
+        S4_ARVALID = 1'b0;
+        S4_ARLEN   = M2_ARLEN;
+        S4_ARSIZE  = M2_ARSIZE;
+        S4_ARBURST = M2_ARBURST;
         S6_ARADDR  = M2_ARADDR;
         S6_ARVALID = 1'b0;
         S6_ARLEN   = M2_ARLEN;
@@ -255,6 +286,7 @@ module AXI4 (
         M2_RLAST   = S2_RLAST;
         S2_RREADY  = 1'b0;
         S3_RREADY  = 1'b0;
+        S4_RREADY  = 1'b0;
         S6_RREADY  = 1'b0;
         // AW
         M2_AWREADY = 1'b0;
@@ -268,6 +300,11 @@ module AXI4 (
         S3_AWLEN   = M2_AWLEN;
         S3_AWSIZE  = M2_AWSIZE;
         S3_AWBURST = M2_AWBURST;
+        S4_AWADDR  = M2_AWADDR;
+        S4_AWVALID = 1'b0;
+        S4_AWLEN   = M2_AWLEN;
+        S4_AWSIZE  = M2_AWSIZE;
+        S4_AWBURST = M2_AWBURST;
         S6_AWADDR  = M2_AWADDR;
         S6_AWVALID = 1'b0;
         S6_AWLEN   = M2_AWLEN;
@@ -283,6 +320,10 @@ module AXI4 (
         S3_WVALID  = 1'b0;
         S3_WLAST   = M2_WLAST;
         S3_WSTRB   = M2_WSTRB;
+        S4_WDATA   = M2_WDATA;
+        S4_WVALID  = 1'b0;
+        S4_WLAST   = M2_WLAST;
+        S4_WSTRB   = M2_WSTRB;
         S6_WDATA   = M2_WDATA;
         S6_WVALID  = 1'b0;
         S6_WLAST   = M2_WLAST;
@@ -292,6 +333,7 @@ module AXI4 (
         M2_BVALID  = 1'b0;
         S2_BREADY  = 1'b0;
         S3_BREADY  = 1'b0;
+        S4_BREADY  = 1'b0;
         S6_BREADY  = 1'b0;
 
         // Read routing 
@@ -309,6 +351,14 @@ module AXI4 (
             M2_ARREADY = S3_ARREADY;
             M2_RVALID  = S3_RVALID;
             S3_RREADY  = M2_RREADY;
+        end
+        else if (M2_ARADDR >= `GPIO_BASE && M2_ARADDR < `GPIO_BASE + `REGION_SIZE) begin
+            M2_RDATA   = S4_RDATA;
+            M2_RLAST   = S4_RLAST;
+            S4_ARVALID = M2_ARVALID;
+            M2_ARREADY = S4_ARREADY;
+            M2_RVALID  = S4_RVALID;
+            S4_RREADY  = M2_RREADY;
         end
         else if (M2_ARADDR >= `CLINT_BASE && M2_ARADDR < `CLINT_BASE + `REGION_SIZE) begin
             M2_RDATA   = S6_RDATA;
@@ -336,6 +386,15 @@ module AXI4 (
             M2_BRESP   = S3_BRESP;
             M2_BVALID  = S3_BVALID;
             S3_BREADY  = M2_BREADY;
+        end
+        else if (M2_AWADDR >= `GPIO_BASE && M2_AWADDR < `GPIO_BASE + `REGION_SIZE) begin
+            S4_AWVALID = M2_AWVALID;
+            M2_AWREADY = S4_AWREADY;
+            S4_WVALID  = M2_WVALID;
+            M2_WREADY  = S4_WREADY;
+            M2_BRESP   = S4_BRESP;
+            M2_BVALID  = S4_BVALID;
+            S4_BREADY  = M2_BREADY;
         end
         else if (M2_AWADDR >= `CLINT_BASE && M2_AWADDR < `CLINT_BASE + `REGION_SIZE) begin
             S6_AWVALID = M2_AWVALID;

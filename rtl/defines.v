@@ -204,7 +204,7 @@
 `define CSR_MCAUSE                      12'h342
 
 // ---- Peripherals ----
-`define Num_IntSrc                      4'd2
+`define Num_IntSrc                      4'd3
 
 // ----Address Mapping----
 `define REGION_SIZE                     32'h2000

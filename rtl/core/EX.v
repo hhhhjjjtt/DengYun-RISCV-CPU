@@ -149,9 +149,9 @@ module EX (
     wire equal_flag = (alu_SRC_A == alu_SRC_B);
 
     // multiply result
-    wire signed[63:0]   mul_ss = $signed({{32{alu_SRC_A[31]}}, alu_SRC_A}) * $signed({{32{alu_SRC_B[31]}}, alu_SRC_B});
-    wire signed[63:0]   mul_su = $signed({{32{alu_SRC_A[31]}}, alu_SRC_A}) * $signed({32'b0, alu_SRC_B});
-    wire[63:0]          mul_uu = {32'b0, alu_SRC_A} * {32'b0, alu_SRC_B};
+    (* use_dsp = "yes" *) wire signed[63:0]   mul_ss = $signed({{32{alu_SRC_A[31]}}, alu_SRC_A}) * $signed({{32{alu_SRC_B[31]}}, alu_SRC_B});
+    (* use_dsp = "yes" *) wire signed[63:0]   mul_su = $signed({{32{alu_SRC_A[31]}}, alu_SRC_A}) * $signed({32'b0, alu_SRC_B});
+    (* use_dsp = "yes" *) wire[63:0]          mul_uu = {32'b0, alu_SRC_A} * {32'b0, alu_SRC_B};
 
     // ALU Result
     reg[`DataBus] alu_result;

@@ -2,14 +2,18 @@
 
 module soc_top #(
     parameter ROM_FILE = "rom.mem",
-    parameter RAM_FILE = "ram.mem"
+    parameter RAM_FILE = "ram.mem",
+    parameter GPIO_N   = 2
 ) (
     input wire                  i_Clk,
     input wire                  i_reset,
 
     // Peripheral: UART
     output wire                 o_tx_serial,
-    input wire                  i_rx_serial
+    input wire                  i_rx_serial,
+
+    // Peripheral: GPIO
+    inout wire[GPIO_N-1:0]      gpio_pins
 );
 
     // ---- cpu_core Outputs ----
@@ -179,6 +183,23 @@ module soc_top #(
     wire[3:0]           S3_WSTRB;
     wire                S3_BREADY;
 
+    wire[31:0]          S4_ARADDR;
+    wire                S4_ARVALID;
+    wire[7:0]           S4_ARLEN;
+    wire[2:0]           S4_ARSIZE;
+    wire[1:0]           S4_ARBURST;
+    wire                S4_RREADY;
+    wire[31:0]          S4_AWADDR;
+    wire                S4_AWVALID;
+    wire[7:0]           S4_AWLEN;
+    wire[2:0]           S4_AWSIZE;
+    wire[1:0]           S4_AWBURST;
+    wire[31:0]          S4_WDATA;
+    wire                S4_WVALID;
+    wire                S4_WLAST;
+    wire[3:0]           S4_WSTRB;
+    wire                S4_BREADY;
+
     wire[31:0]          S6_ARADDR;
     wire                S6_ARVALID;
     wire[7:0]           S6_ARLEN;
@@ -217,6 +238,22 @@ module soc_top #(
     wire[1:0]           RAM_axi_bresp;
     wire                RAM_axi_bvalid;
 
+    // ---- PLIC Outputs ----
+    wire                PLIC_axi_arready;
+
+    wire[31:0]          PLIC_axi_rdata;
+    wire                PLIC_axi_rvalid;
+    wire                PLIC_axi_rlast;
+
+    wire                PLIC_axi_awready;
+
+    wire                PLIC_axi_wready;
+
+    wire[1:0]           PLIC_axi_bresp;
+    wire                PLIC_axi_bvalid;
+
+    wire                PLIC_external_int_pending;
+
     // ---- UART Outputs ----
     wire                UART_axi_arready;
 
@@ -236,6 +273,38 @@ module soc_top #(
 
     wire                UART_rx_valid;
 
+    // ---- GPIO Outputs ----
+    wire                GPIO_axi_arready;
+
+    wire[31:0]          GPIO_axi_rdata;
+    wire                GPIO_axi_rvalid;
+    wire                GPIO_axi_rlast;
+
+    wire                GPIO_axi_awready;
+
+    wire                GPIO_axi_wready;
+
+    wire[1:0]           GPIO_axi_bresp;
+    wire                GPIO_axi_bvalid;
+
+    wire                GPIO_interrupt;
+
+    wire[GPIO_N-1:0]    GPIO_out;
+    wire[GPIO_N-1:0]    GPIO_out_en;
+    wire[GPIO_N-1:0]    GPIO_in;
+
+    genvar gi;
+    generate
+        for (gi = 0; gi < GPIO_N; gi = gi + 1) begin : gpio_iobuf
+            IOBUF iobuf (
+                .IO (gpio_pins[gi]),
+                .I  (GPIO_out[gi]),
+                .T  (~GPIO_out_en[gi]),  // T=1 = hi-Z, high=input, low=output
+                .O  (GPIO_in[gi])
+            );
+        end
+    endgenerate
+
     // ---- CLINT Outputs ----
     wire                CLINT_axi_arready;
 
@@ -250,23 +319,7 @@ module soc_top #(
     wire[1:0]           CLINT_axi_bresp;
     wire                CLINT_axi_bvalid;
 
-    wire                CLINT_timer_int_pending;
-    
-    // ---- PLIC Outputs ----
-    wire                PLIC_axi_arready;
-
-    wire[31:0]          PLIC_axi_rdata;
-    wire                PLIC_axi_rvalid;
-    wire                PLIC_axi_rlast;
-
-    wire                PLIC_axi_awready;
-
-    wire                PLIC_axi_wready;
-
-    wire[1:0]           PLIC_axi_bresp;
-    wire                PLIC_axi_bvalid;
-
-    wire                PLIC_external_int_pending;
+    wire                CLINT_timer_int_pending;    
 
     cpu_core cpu_core_0 (
         .i_Clk                  (i_Clk),
@@ -584,6 +637,32 @@ module soc_top #(
         .S3_BVALID              (UART_axi_bvalid),
         .S3_BREADY              (S3_BREADY),
 
+        // GPIO
+        .S4_ARADDR              (S4_ARADDR),
+        .S4_ARVALID             (S4_ARVALID),
+        .S4_ARREADY             (GPIO_axi_arready),
+        .S4_ARLEN               (S4_ARLEN),
+        .S4_ARSIZE              (S4_ARSIZE),
+        .S4_ARBURST             (S4_ARBURST),
+        .S4_RDATA               (GPIO_axi_rdata),
+        .S4_RVALID              (GPIO_axi_rvalid),
+        .S4_RREADY              (S4_RREADY),
+        .S4_RLAST               (GPIO_axi_rlast),
+        .S4_AWADDR              (S4_AWADDR),
+        .S4_AWVALID             (S4_AWVALID),
+        .S4_AWREADY             (GPIO_axi_awready),
+        .S4_AWLEN               (S4_AWLEN),
+        .S4_AWSIZE              (S4_AWSIZE),
+        .S4_AWBURST             (S4_AWBURST),
+        .S4_WDATA               (S4_WDATA),
+        .S4_WVALID              (S4_WVALID),
+        .S4_WREADY              (GPIO_axi_wready),
+        .S4_WLAST               (S4_WLAST),
+        .S4_WSTRB               (S4_WSTRB),
+        .S4_BRESP               (GPIO_axi_bresp),
+        .S4_BVALID              (GPIO_axi_bvalid),
+        .S4_BREADY              (S4_BREADY),
+
         // CLINT
         .S6_ARADDR              (S6_ARADDR),
         .S6_ARVALID             (S6_ARVALID),
@@ -666,7 +745,7 @@ module soc_top #(
         .i_axi_bready           (S1_BREADY)
     );
 
-    wire[`Num_IntSrc-1:0]       PLIC_int_src = {UART_tx_done, UART_rx_valid};
+    wire[`Num_IntSrc-1:0]       PLIC_int_src = {UART_tx_done, UART_rx_valid, GPIO_interrupt};
     PLIC PLIC_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
@@ -736,6 +815,42 @@ module soc_top #(
 
         .i_rx_serial            (i_rx_serial),
         .o_rx_valid             (UART_rx_valid)
+    );
+
+    GPIO #(.N(GPIO_N)) GPIO_0 (
+        .i_Clk                  (i_Clk),
+        .i_reset                (i_reset),
+
+        .i_axi_araddr           (S4_ARADDR),
+        .i_axi_arvalid          (S4_ARVALID),
+        .o_axi_arready          (GPIO_axi_arready),
+        .i_axi_arlen            (S4_ARLEN),
+        .i_axi_arsize           (S4_ARSIZE),
+        .i_axi_arburst          (S4_ARBURST),
+        .o_axi_rdata            (GPIO_axi_rdata),
+        .o_axi_rvalid           (GPIO_axi_rvalid),
+        .i_axi_rready           (S4_RREADY),
+        .o_axi_rlast            (GPIO_axi_rlast),
+        .i_axi_awaddr           (S4_AWADDR),
+        .i_axi_awvalid          (S4_AWVALID),
+        .o_axi_awready          (GPIO_axi_awready),
+        .i_axi_awlen            (S4_AWLEN),
+        .i_axi_awsize           (S4_AWSIZE),
+        .i_axi_awburst          (S4_AWBURST),
+        .i_axi_wdata            (S4_WDATA),
+        .i_axi_wvalid           (S4_WVALID),
+        .o_axi_wready           (GPIO_axi_wready),
+        .i_axi_wlast            (S4_WLAST),
+        .i_axi_wstrb            (S4_WSTRB),
+        .o_axi_bresp            (GPIO_axi_bresp),
+        .o_axi_bvalid           (GPIO_axi_bvalid),
+        .i_axi_bready           (S4_BREADY),
+
+        .o_gpio_out             (GPIO_out),
+        .o_gpio_out_en          (GPIO_out_en),
+        .i_gpio_in              (GPIO_in),
+
+        .o_gpio_interrupt       (GPIO_interrupt)
     );
 
     CLINT CLINT_0 (

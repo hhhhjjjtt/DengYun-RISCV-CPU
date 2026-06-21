@@ -25,7 +25,7 @@ module ROM #(
     output reg          o_axi_rlast
 );
 
-    reg [`DataBus] roms [0:`InstAddrDepth-1];
+    (* ram_style = "block" *) reg [`DataBus] roms [0:`InstAddrDepth-1];
 
     integer i;
     initial begin
