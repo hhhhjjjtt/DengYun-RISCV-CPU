@@ -29,12 +29,11 @@ Requires `riscv-none-elf-gcc`. Output lands in `test/test_full/mem/`.
 ## Timeline
 1. AXI4 bus (priority arbiter with DMA stub) + connect masters/slaves (✓)
 3. Full SoC, assembly tests passing with new bus/cache 
-4. UART(✓); CLINT(✓)
+4. UART, GPIO, CLINT timer(✓)
 5. FPGA synthesis, timing closure, blink/uart hello world
 6. C toolchain bring-up, printf, basic programs
 7. Running Coremark performance check
 ---
-8. SPI, GPIO 
-9. DMA (software-managed flush + non-cacheable region)
-10. JTAG
-11. Running RTOS
+8. DMA (software-managed flush + non-cacheable region)
+9. SPI, JTAG
+10. Running RTOS
