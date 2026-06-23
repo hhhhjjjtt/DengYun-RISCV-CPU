@@ -8,10 +8,12 @@ module Ctrl_Unit (
     input wire                      i_id_load_use,
     
     // from EX
-    input wire                      i_ex_branch,
     input wire                      i_ex_division_busy,
-    input wire                      i_jump_flag,
-    input wire[`InstAddrBus]        i_jump_addr,
+
+    // from EX_MEM (registered branch/jump)
+    input wire                      i_ex_mem_branch,
+    input wire                      i_ex_mem_jump_flag,
+    input wire[`InstAddrBus]        i_ex_mem_jump_addr,
     
     // from MEM
     input wire                      i_mem_stall,
@@ -40,14 +42,21 @@ module Ctrl_Unit (
         o_id_ex_ctrl    = `ctrl_none;
         o_ex_mem_ctrl   = `ctrl_none;
         o_mem_wb_ctrl   = `ctrl_none;
-        o_jump_flag     = i_jump_flag;
-        o_jump_addr     = i_jump_addr;
+        o_jump_flag     = i_ex_mem_jump_flag;
+        o_jump_addr     = i_ex_mem_jump_addr;
         if (i_mem_stall || i_if_stall || i_trap_stall) begin   // full pipeline stall
             o_pc_ctrl       = `ctrl_stall;
             o_if_id_ctrl    = `ctrl_stall;
             o_id_ex_ctrl    = `ctrl_stall;
             o_ex_mem_ctrl   = `ctrl_stall;
             o_mem_wb_ctrl   = `ctrl_stall;
+        end
+        else if (i_ex_mem_branch) begin         // branch taken: flush 3 trailing stages
+            o_pc_ctrl       = `ctrl_none;
+            o_if_id_ctrl    = `ctrl_flush;
+            o_id_ex_ctrl    = `ctrl_flush;
+            o_ex_mem_ctrl   = `ctrl_flush;
+            o_mem_wb_ctrl   = `ctrl_none;
         end
         else if (i_trap_jump_flag) begin        // trap/mret: flush IF/ID, redirect PC
             o_pc_ctrl       = `ctrl_none;
@@ -65,13 +74,6 @@ module Ctrl_Unit (
             o_if_id_ctrl    = `ctrl_stall;
             o_id_ex_ctrl    = `ctrl_stall;
             o_ex_mem_ctrl   = `ctrl_flush;
-            o_mem_wb_ctrl   = `ctrl_none;
-        end
-        else if (i_ex_branch) begin             // pipeline flush due to branch
-            o_pc_ctrl       = `ctrl_none;
-            o_if_id_ctrl    = `ctrl_flush;
-            o_id_ex_ctrl    = `ctrl_flush;
-            o_ex_mem_ctrl   = `ctrl_none;
             o_mem_wb_ctrl   = `ctrl_none;
         end
         else if (i_id_load_use) begin           // pipeline stall due to load instructions

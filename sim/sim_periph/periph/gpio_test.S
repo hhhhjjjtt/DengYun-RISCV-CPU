@@ -1,25 +1,27 @@
 # gpio_test.S — GPIO output drive and falling-edge interrupt test
 #
 # Flow:
-#   1. Set DIR = 0x1 (pin 0 = output, pin 1 = input)
-#   2. Set OUT_DATA = 0x1 (drive pin 0 high)
-#   3. Enable INT_EN = 0x2 (falling-edge interrupt on pin 1)
-#   4. Enable PLIC source 0 (GPIO), MEIE, MIE
-#   5. Write setup_done = 1 (signals testbench to proceed)
-#   6. Spin until int_count > 0 (ISR will set it)
-#   7. Copy isr_int_state -> s1, isr_claim_id -> s2, int_count -> s0
+#   1. Zero s0/s1/s2 (ISR result registers)
+#   2. Set DIR = 0x1 (pin 0 = output, pin 1 = input)
+#   3. Set OUT_DATA = 0x1 (drive pin 0 high)
+#   4. Enable INT_EN = 0x2 (falling-edge interrupt on pin 1)
+#   5. Enable PLIC source 2 (GPIO), MEIE, MIE
+#   6. Write setup_done = 1 (signals testbench to proceed)
+#   7. Spin until s0 > 0  (ISR increments s0 directly)
 #   8. Write pass sentinel 0x00c0ffee to a0; halt
 #
 # ISR flow:
-#   - PLIC claim -> expect source ID 0 (GPIO is src[0])
-#   - Read INT_STATE, snapshot to isr_int_state, then W1C-clear
-#   - Increment int_count
+#   - PLIC claim -> save claim ID directly to s2 (no memory write)
+#   - Read INT_STATE -> save directly to s1 (no memory write), then W1C-clear
+#   - Increment s0 directly (no memory write)
 #   - PLIC complete
+#   NOTE: s0/s1/s2 are intentionally NOT saved/restored by the ISR;
+#         they carry the output values back to the main thread via registers.
 #
-# Testbench checks (via registers, avoiding D-cache stale reads):
+# Testbench checks (all via register file — no D-cache stale read risk):
 #   s0 (regs[8])  = int_count        (expect 1)
 #   s1 (regs[9])  = isr_int_state    (expect 0x2 = bit1, pin1 fell)
-#   s2 (regs[18]) = isr_claim_id     (expect 0   = GPIO source)
+#   s2 (regs[18]) = isr_claim_id     (expect 2   = GPIO source)
 #   a0 (regs[10]) = pass sentinel    (expect 0x00c0ffee)
 
 #define GPIO_BASE       0x8000
@@ -44,11 +46,16 @@ _start:
     la   t0, trap_handler
     csrw mtvec, t0
 
+    /* zero ISR result registers before enabling interrupts */
+    li   s0, 0                          /* int_count     */
+    li   s1, 0                          /* isr_int_state */
+    li   s2, 0                          /* isr_claim_id  */
+
     /* configure GPIO */
     li   t0, GPIO_BASE
     li   t1, 0x1
-    sw   t1, GPIO_DIR(t0)          /* pin 0 = output, pin 1 = input */
-    sw   t1, GPIO_OUT_DATA(t0)     /* drive pin 0 high */
+    sw   t1, GPIO_DIR(t0)               /* pin 0 = output, pin 1 = input */
+    sw   t1, GPIO_OUT_DATA(t0)          /* drive pin 0 high */
 
     /* clear any stale/X INT_STATE bits caused by gpio_pins[0] floating
        (IOBUF is hi-Z before DIR is written; Z propagates through the 2-FF
@@ -61,14 +68,14 @@ _start:
     li   t1, 0x2
     sw   t1, GPIO_INT_EN(t0)
 
-    /* enable PLIC source 0 (GPIO interrupt) */
+    /* enable PLIC source 2 (GPIO interrupt) */
     li   t0, PLIC_BASE
-    li   t1, 0x1
+    li   t1, 0x4
     sw   t1, PLIC_ENABLE(t0)
 
     li   t0, 0x800
-    csrw mie, t0                   /* MEIE: machine external interrupt enable */
-    csrsi mstatus, 8               /* mstatus.MIE = 1 */
+    csrw mie, t0                        /* MEIE: machine external interrupt enable */
+    csrsi mstatus, 8                    /* mstatus.MIE = 1 */
 
     /* signal testbench: setup is complete, pin 0 is high, ready for edge */
     la   t0, setup_done
@@ -76,15 +83,7 @@ _start:
     sw   t1, 0(t0)
 
 wait_int:
-    la   t0, int_count
-    lw   s0, 0(t0)
-    beqz s0, wait_int
-
-    /* copy ISR results to saved registers for testbench inspection */
-    la   t0, isr_int_state
-    lw   s1, 0(t0)
-    la   t0, isr_claim_id
-    lw   s2, 0(t0)
+    beqz s0, wait_int                   /* ISR sets s0 = 1 directly — no memory load */
 
     li   a0, 0x00c0ffee
     j    halt
@@ -99,31 +98,24 @@ trap_handler:
     sw   t0,  4(sp)
     sw   t1,  8(sp)
     sw   t2, 12(sp)
+    /* s0/s1/s2 intentionally NOT saved — ISR uses them as output registers */
 
     csrr t0, mcause
-    bgez t0, trap_done             /* bit 31 = 0 -> exception, not expected */
+    bgez t0, trap_done                  /* bit 31 = 0 -> exception, not expected */
 
-    /* claim interrupt from PLIC; t1 = source ID (expect 0 = GPIO) */
+    /* claim interrupt from PLIC; t1 = source ID (expect 2 = GPIO) */
     li   t0, PLIC_BASE
     lw   t1, PLIC_CLAIM(t0)
+    mv   s2, t1                         /* isr_claim_id -> s2 directly */
 
-    /* save claim ID */
-    la   t0, isr_claim_id
-    sw   t1, 0(t0)
-
-    /* read INT_STATE, snapshot it, then W1C-clear */
+    /* read INT_STATE -> s1 directly, then W1C-clear */
     li   t0, GPIO_BASE
     lw   t2, GPIO_INT_STATE(t0)
-    la   t0, isr_int_state
-    sw   t2, 0(t0)
-    li   t0, GPIO_BASE
-    sw   t2, GPIO_INT_STATE(t0)    /* write 1s to clear the bits that fired */
+    mv   s1, t2                         /* isr_int_state -> s1 directly */
+    sw   t2, GPIO_INT_STATE(t0)         /* write 1s to clear the bits that fired */
 
-    /* increment int_count */
-    la   t0, int_count
-    lw   t2, 0(t0)
-    addi t2, t2, 1
-    sw   t2, 0(t0)
+    /* increment int_count directly in s0 */
+    addi s0, s0, 1
 
     /* PLIC complete: re-arm source */
     li   t0, PLIC_BASE
@@ -140,6 +132,3 @@ trap_done:
 /* ---- data ---- */
     .section .data
 setup_done:    .word 0
-int_count:     .word 0
-isr_int_state: .word 0
-isr_claim_id:  .word 0

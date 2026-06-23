@@ -173,6 +173,10 @@ module cpu_core (
     wire                    divider_0_w_div_ready;
     
     // ---- EX_MEM_0 outputs ----
+    wire                    ex_mem_0_w_ex_mem_branch;
+    wire                    ex_mem_0_w_ex_mem_jump_flag;
+    wire[`InstAddrBus]      ex_mem_0_w_ex_mem_jump_addr;
+
     wire[`InstAddrBus]      ex_mem_0_w_pc_addr;
     wire[`DataBus]          ex_mem_0_w_inst_data;
     wire                    ex_mem_0_w_wb_src;
@@ -220,10 +224,10 @@ module cpu_core (
         
         .i_id_load_use          (id_0_w_id_load_use),
         
-        .i_ex_branch            (ex_0_w_ex_branch),
         .i_ex_division_busy     (ex_0_w_ex_division_busy),
-        .i_jump_flag            (ex_0_w_jump_flag),
-        .i_jump_addr            (ex_0_w_jump_addr),
+        .i_ex_mem_branch        (ex_mem_0_w_ex_mem_branch),
+        .i_ex_mem_jump_flag     (ex_mem_0_w_ex_mem_jump_flag),
+        .i_ex_mem_jump_addr     (ex_mem_0_w_ex_mem_jump_addr),
         
         .i_mem_stall            (mem_0_w_mem_stall),
 
@@ -526,7 +530,14 @@ module cpu_core (
         .i_mem_op_type          (ex_0_w_mem_op_type),
         
         .i_ctrl_flag            (ctrl_unit_0_w_ex_mem_ctrl),
-        
+
+        .i_ex_branch            (ex_0_w_ex_branch),
+        .i_jump_flag            (ex_0_w_jump_flag),
+        .i_jump_addr            (ex_0_w_jump_addr),
+        .o_ex_mem_branch        (ex_mem_0_w_ex_mem_branch),
+        .o_ex_mem_jump_flag     (ex_mem_0_w_ex_mem_jump_flag),
+        .o_ex_mem_jump_addr     (ex_mem_0_w_ex_mem_jump_addr),
+
         .o_pc_addr              (ex_mem_0_w_pc_addr),
         .o_inst_data            (ex_mem_0_w_inst_data),
         .o_wb_src               (ex_mem_0_w_wb_src),
@@ -633,7 +644,8 @@ module cpu_core (
         .o_trap_is_interrupt    (trap_unit_0_w_trap_is_interrupt),
 
         .i_mem_stall            (mem_0_w_mem_stall),
-        .i_if_stall             (if_0_w_if_stall)
+        .i_if_stall             (if_0_w_if_stall),
+        .i_ex_mem_branch        (ex_mem_0_w_ex_mem_branch)
     );
 
 endmodule

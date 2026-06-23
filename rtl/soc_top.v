@@ -745,7 +745,7 @@ module soc_top #(
         .i_axi_bready           (S1_BREADY)
     );
 
-    wire[`Num_IntSrc-1:0]       PLIC_int_src = {UART_tx_done, UART_rx_valid, GPIO_interrupt};
+    wire[`Num_IntSrc-1:0]       PLIC_int_src = {GPIO_interrupt, UART_tx_done, UART_rx_valid};
     PLIC PLIC_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),

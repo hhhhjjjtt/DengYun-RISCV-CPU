@@ -33,7 +33,11 @@ module Trap_Unit (
 
     // from Ctrl_Unit (stall signals — interrupt must not fire while pipeline is stalled)
     input wire                  i_mem_stall,
-    input wire                  i_if_stall
+    input wire                  i_if_stall,
+
+    // from EX_MEM — defer interrupts for the one cycle a taken branch is being finalized,
+    // so the wrong-path instruction in EX cannot corrupt mepc/mstatus
+    input wire                  i_ex_mem_branch
 );
 
     // State machine states
@@ -46,7 +50,7 @@ module Trap_Unit (
     wire mstatus_mpie = i_csr_mstatus[7];   // Machine Previous Interrupt Enable
 
     // trap condition wires
-    wire pipeline_free   = !i_mem_stall && !i_if_stall;
+    wire pipeline_free   = !i_mem_stall && !i_if_stall && !i_ex_mem_branch;
     wire is_exception    = (i_trap_cause == `trap_ecall) || (i_trap_cause == `trap_ebreak);
     wire is_timer_int    = i_timer_int_pending    && i_csr_mie[7]  && mstatus_mie && pipeline_free;
     wire is_external_int = i_external_int_pending && i_csr_mie[11] && mstatus_mie && pipeline_free;

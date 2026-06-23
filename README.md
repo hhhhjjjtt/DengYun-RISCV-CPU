@@ -34,6 +34,6 @@ Requires `riscv-none-elf-gcc`. Output lands in `test/test_full/mem/`.
 6. C toolchain bring-up, printf, basic programs
 7. Running Coremark performance check
 ---
-8. DMA (software-managed flush + non-cacheable region)
-9. SPI, JTAG
+8. SPI/JTAG programmer; support in-system programming
+9. DMA (software-managed flush + non-cacheable region)
 10. Running RTOS

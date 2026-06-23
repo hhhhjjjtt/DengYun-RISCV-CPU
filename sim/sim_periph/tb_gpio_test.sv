@@ -4,17 +4,22 @@
 //
 // Checks (5 total):
 //   1. gpio_pins[0] === 1 after setup  (DUT drives output pin high)
-//   2. regs[8]  (s0) === 1             (int_count: ISR fired once)
-//   3. regs[9]  (s1) === 0x2           (isr_int_state: bit1 = pin1 fell)
-//   4. regs[18] (s2) === 0x0           (isr_claim_id: source 0 = GPIO)
+//   2. regs[8]  (s0) === 1             (int_count: ISR increments s0 directly)
+//   3. regs[9]  (s1) === 0x2           (isr_int_state: ISR writes s1 directly; bit1 = pin1 fell)
+//   4. regs[18] (s2) === 0x2           (isr_claim_id: ISR writes s2 directly; source 2 = GPIO)
 //   5. regs[10] (a0) === 0x00c0ffee    (pass sentinel)
+//
+// ISR result registers (s0/s1/s2) are written directly by the ISR with no intervening
+// memory store/load, eliminating any D-cache stale-read risk.
 //
 // Pin assignment:
 //   gpio_pins[0] — DUT output (DIR[0]=1); TB leaves as Z, reads the driven value.
 //   gpio_pins[1] — DUT input  (DIR[1]=0); TB drives; toggled 1->0 to trigger ISR.
 //
-// PLIC source mapping (from soc_top PLIC_int_src = {UART_tx_done, UART_rx_valid, GPIO_interrupt}):
-//   src[0] = GPIO_interrupt  -> source ID 0 (highest priority)
+// PLIC source mapping (from soc_top PLIC_int_src = {GPIO_interrupt, UART_tx_done, UART_rx_valid}):
+//   src[0] = UART_rx_valid   -> source ID 0 (highest priority)
+//   src[1] = UART_tx_done    -> source ID 1
+//   src[2] = GPIO_interrupt  -> source ID 2
 
 module tb_gpio_test;
 
@@ -93,12 +98,12 @@ module tb_gpio_test;
             $display("ERR isr_int_state = 0x%08h (expected 0x00000002)", dut.cpu_core_0.Regs_0.regs[9]);
         end
 
-        // ---- check 4: claim ID was 0 (GPIO source) (in s2 = regs[18]) ----
-        if (dut.cpu_core_0.Regs_0.regs[18] === 32'h0) begin
-            $display("OK  isr_claim_id = 0 (GPIO source)");
+        // ---- check 4: claim ID was 2 (GPIO source) (in s2 = regs[18]) ----
+        if (dut.cpu_core_0.Regs_0.regs[18] === 32'h2) begin
+            $display("OK  isr_claim_id = 2 (GPIO source)");
             checks_passed = checks_passed + 1;
         end else begin
-            $display("ERR isr_claim_id = %0d (expected 0)", dut.cpu_core_0.Regs_0.regs[18]);
+            $display("ERR isr_claim_id = %0d (expected 2)", dut.cpu_core_0.Regs_0.regs[18]);
         end
 
         // ---- check 5: pass sentinel ----

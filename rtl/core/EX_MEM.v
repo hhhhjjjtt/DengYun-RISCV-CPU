@@ -20,6 +20,11 @@ module EX_MEM (
     // from Ctrl_Unit
     input wire[`CtrlTypeBus]    i_ctrl_flag,
 
+    // from EX (branch/jump to register)
+    input wire                  i_ex_branch,
+    input wire                  i_jump_flag,
+    input wire[`InstAddrBus]    i_jump_addr,
+
     // to MEM
     output reg[`InstAddrBus]    o_pc_addr,
     output reg[`DataBus]        o_inst_data,
@@ -36,7 +41,12 @@ module EX_MEM (
     // forward to EX
     output reg                  o_ex_mem_regd_we,
     output reg[`RegsAddrBus]    o_ex_mem_regd_addr,
-    output reg[`DataBus]        o_ex_mem_regd_data
+    output reg[`DataBus]        o_ex_mem_regd_data,
+
+    // to Ctrl_Unit (registered branch/jump)
+    output reg                  o_ex_mem_branch,
+    output reg                  o_ex_mem_jump_flag,
+    output reg[`InstAddrBus]    o_ex_mem_jump_addr
 );
     
     always @(posedge i_Clk or posedge i_reset) begin
@@ -55,6 +65,9 @@ module EX_MEM (
             o_ex_mem_regd_we    <= `Disable;
             o_ex_mem_regd_addr  <= `Reg0Addr;
             o_ex_mem_regd_data  <= `ZeroWord;
+            o_ex_mem_branch     <= 1'b0;
+            o_ex_mem_jump_flag  <= `JumpDisable;
+            o_ex_mem_jump_addr  <= `ZeroAddr;
         end
         else begin
             case (i_ctrl_flag)
@@ -73,6 +86,9 @@ module EX_MEM (
                     o_ex_mem_regd_we    <= i_regd_we && (i_wb_src == `WB_src_ALU);
                     o_ex_mem_regd_addr  <= i_regd_addr;
                     o_ex_mem_regd_data  <= i_regd_data;
+                    o_ex_mem_branch     <= i_ex_branch;
+                    o_ex_mem_jump_flag  <= i_jump_flag;
+                    o_ex_mem_jump_addr  <= i_jump_addr;
                 end
                 `ctrl_stall: begin
                     o_pc_addr           <= o_pc_addr;
@@ -89,6 +105,9 @@ module EX_MEM (
                     o_ex_mem_regd_we    <= o_ex_mem_regd_we;
                     o_ex_mem_regd_addr  <= o_ex_mem_regd_addr;
                     o_ex_mem_regd_data  <= o_ex_mem_regd_data;
+                    o_ex_mem_branch     <= o_ex_mem_branch;
+                    o_ex_mem_jump_flag  <= o_ex_mem_jump_flag;
+                    o_ex_mem_jump_addr  <= o_ex_mem_jump_addr;
                 end
                 `ctrl_flush: begin
                     o_pc_addr           <= `ZeroAddr;
@@ -105,6 +124,9 @@ module EX_MEM (
                     o_ex_mem_regd_we    <= `Disable;
                     o_ex_mem_regd_addr  <= `Reg0Addr;
                     o_ex_mem_regd_data  <= `ZeroWord;
+                    o_ex_mem_branch     <= 1'b0;
+                    o_ex_mem_jump_flag  <= `JumpDisable;
+                    o_ex_mem_jump_addr  <= `ZeroAddr;
                 end
                 default: begin
                     o_pc_addr           <= i_pc_addr;
@@ -121,6 +143,9 @@ module EX_MEM (
                     o_ex_mem_regd_we    <= i_regd_we && (i_wb_src == `WB_src_ALU);
                     o_ex_mem_regd_addr  <= i_regd_addr;
                     o_ex_mem_regd_data  <= i_regd_data;
+                    o_ex_mem_branch     <= i_ex_branch;
+                    o_ex_mem_jump_flag  <= i_jump_flag;
+                    o_ex_mem_jump_addr  <= i_jump_addr;
                 end
             endcase
         end
