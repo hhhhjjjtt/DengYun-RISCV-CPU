@@ -21,7 +21,7 @@ Requires `riscv-none-elf-gcc`. Output lands in `test/test_full/mem/`.
 3. Run simulation
 
 ## Deploying on FPGA
-[Placeholder — timing, resource utilization, target board]
+[Placeholder — zynq core bd tcl, project tcl, target board (tested: pynq-z2; plan: artix-7, kria kv260)]
 
 ## Performance
 [Placeholder — Add after Coremark test]
@@ -31,9 +31,10 @@ Requires `riscv-none-elf-gcc`. Output lands in `test/test_full/mem/`.
 3. Full SoC, assembly tests passing with new bus/cache (✓)
 4. UART, GPIO, CLINT timer (✓)
 5. FPGA synthesis, timing closure, blink/uart hello world (✓)
-6. C toolchain bring-up, printf, basic programs
-7. Running Coremark performance check
+6. Program loader
+7. C toolchain bring-up, printf, basic programs
+8. Running Coremark performance check
 ---
-8. SPI/JTAG programmer; support in-system programming
-9. DMA (software-managed flush + non-cacheable region)
-10. Running RTOS
+9. SPI/JTAG programmer; support in-system programming
+10. DMA (software-managed flush + non-cacheable region)
+11. Running RTOS
