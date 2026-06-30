@@ -48,7 +48,7 @@ module cpu_core (
     
     // ---- IF_ID_0 outputs ---- 
     wire[`InstAddrBus]      if_id_0_w_pc_addr;
-    wire[`DataBus]          if_id_0_w_inst_dat;
+    wire[`DataBus]          if_id_0_w_inst_data;
     
     // ---- ID_0 outputs ---- 
     wire[`RegsAddrBus]      id_0_w_reg1_rd_addr;
@@ -282,12 +282,12 @@ module cpu_core (
         .i_flush_pc             (ctrl_unit_0_w_jump_addr),
 
         .o_pc_addr              (if_id_0_w_pc_addr),
-        .o_inst_data            (if_id_0_w_inst_dat)
+        .o_inst_data            (if_id_0_w_inst_data)
     );
 
     ID ID_0 (
         .i_pc_addr              (if_id_0_w_pc_addr),
-        .i_inst_data            (if_id_0_w_inst_dat),
+        .i_inst_data            (if_id_0_w_inst_data),
         
         .i_reg1_rd_data         (regs_0_w_rd_data1), 
         .i_reg2_rd_data         (regs_0_w_rd_data2), 

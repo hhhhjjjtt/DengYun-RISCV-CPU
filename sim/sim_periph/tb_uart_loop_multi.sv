@@ -12,10 +12,11 @@ module tb_uart_loop_multi;
     wire wire_tx;                     // monitored by TB ← o_tx_serial
 
     soc_top dut (
-        .i_Clk               (reg_Clk),
-        .i_reset             (reg_reset),
-        .i_rx_serial         (reg_rx),
-        .o_tx_serial         (wire_tx)
+        .i_Clk          (reg_Clk),
+        .i_reset        (reg_reset),
+        .i_debug_en_n   (1'b1),
+        .i_rx_serial    (reg_rx),
+        .o_tx_serial    (wire_tx)
     );
 
     // ---- clock ----

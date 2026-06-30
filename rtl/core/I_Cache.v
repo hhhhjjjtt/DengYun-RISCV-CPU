@@ -28,7 +28,6 @@ module I_Cache (
     output reg[7:0]             o_axi_arlen,
     output reg[2:0]             o_axi_arsize,
     output reg[1:0]             o_axi_arburst,
-
     // AXI master — R channel
     input wire[31:0]            i_axi_rdata,
     input wire                  i_axi_rvalid,

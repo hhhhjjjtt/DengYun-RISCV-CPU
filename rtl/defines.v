@@ -20,12 +20,6 @@
 `define RegsAddrBus                     4:0
 `define Reg0Addr                        5'b0
 
-// ----ROM----
-`define InstAddrDepth                   4096
-
-// ----RAM----
-`define DataAddrDepth                   4096
-
 // ----Enable/Disable----
 `define Enable                          1
 `define Disable                         0
@@ -207,14 +201,25 @@
 `define Num_IntSrc                      4'd3
 
 // ----Address Mapping----
-`define REGION_SIZE                     32'h2000
+`define ROM_BASE                        32'h00000
+`define ROM_SIZE                        32'h10000
 
-`define ROM_BASE                        32'h0000
-`define RAM_BASE                        32'h2000
-`define PLIC_BASE                       32'h4000
-`define UART_BASE                       32'h6000
-`define GPIO_BASE                       32'h8000
-`define SPI_BASE                        32'hA000
-`define CLINT_BASE                      32'hC000
+`define RAM_BASE                        32'h10000
+`define RAM_SIZE                        32'h10000
+
+`define PLIC_BASE                       32'h20000
+`define PLIC_SIZE                       32'h1000
+
+`define UART_BASE                       32'h21000
+`define UART_SIZE                       32'h1000
+
+`define GPIO_BASE                       32'h22000
+`define GPIO_SIZE                       32'h1000
+
+`define SPI_BASE                        32'h23000
+`define SPI_SIZE                        32'h1000
+
+`define CLINT_BASE                      32'h24000
+`define CLINT_SIZE                      32'h1000
 
 `endif

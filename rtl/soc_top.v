@@ -8,10 +8,15 @@ module soc_top #(
     input wire                  i_Clk,
     input wire                  i_reset,
 
-    // Peripheral: UART
-    output wire                 o_tx_serial,
-    input wire                  i_rx_serial,
+    // Program Loader
+    input wire                  i_debug_en_n,
+    input wire                  i_debug_rx,
+    output wire                 o_debug_tx,
 
+    // Peripheral: UART
+    input wire                  i_rx_serial,
+    output wire                 o_tx_serial,
+    
     // Peripheral: GPIO
     inout wire[GPIO_N-1:0]      gpio_pins
 );
@@ -92,6 +97,30 @@ module soc_top #(
 
     wire                MMIO_Port_axi_bready;
 
+    // ---- program_loader Outputs ----
+    wire                program_loader_sys_reset;
+
+    wire[31:0]          program_loader_axi_araddr;
+    wire                program_loader_axi_arvalid;
+    wire[7:0]           program_loader_axi_arlen;
+    wire[2:0]           program_loader_axi_arsize;
+    wire[1:0]           program_loader_axi_arburst;
+
+    wire                program_loader_axi_rready;
+
+    wire[31:0]          program_loader_axi_awaddr;
+    wire                program_loader_axi_awvalid;
+    wire[7:0]           program_loader_axi_awlen;
+    wire[2:0]           program_loader_axi_awsize;
+    wire[1:0]           program_loader_axi_awburst;
+
+    wire[31:0]          program_loader_axi_wdata;
+    wire                program_loader_axi_wvalid;
+    wire                program_loader_axi_wlast;
+    wire[3:0]           program_loader_axi_wstrb;
+
+    wire                program_loader_axi_bready;
+
     // ---- AIX4 Outputs ----
     wire                M0_ARREADY;
     wire[31:0]          M0_RDATA;
@@ -125,12 +154,31 @@ module soc_top #(
     wire[1:0]           M3_BRESP;
     wire                M3_BVALID;
 
+    wire                M4_ARREADY;
+    wire[31:0]          M4_RDATA;
+    wire                M4_RVALID;
+    wire                M4_RLAST;
+    wire                M4_AWREADY;
+    wire                M4_WREADY;
+    wire[1:0]           M4_BRESP;
+    wire                M4_BVALID;
+
     wire[31:0]          S0_ARADDR;
     wire                S0_ARVALID;
     wire[7:0]           S0_ARLEN;
     wire[2:0]           S0_ARSIZE;
     wire[1:0]           S0_ARBURST;
     wire                S0_RREADY;
+    wire[31:0]          S0_AWADDR;
+    wire                S0_AWVALID;
+    wire[7:0]           S0_AWLEN;
+    wire[2:0]           S0_AWSIZE;
+    wire[1:0]           S0_AWBURST;
+    wire[31:0]          S0_WDATA;
+    wire                S0_WVALID;
+    wire                S0_WLAST;
+    wire[3:0]           S0_WSTRB;
+    wire                S0_BREADY;
 
     wire[31:0]          S1_ARADDR;
     wire                S1_ARVALID;
@@ -219,6 +267,10 @@ module soc_top #(
 
     // ---- ROM Outputs ----
     wire                ROM_axi_arready;
+    wire                ROM_axi_awready;
+    wire                ROM_axi_wready;
+    wire[1:0]           ROM_axi_bresp;
+    wire                ROM_axi_bvalid;
 
     wire[31:0]          ROM_axi_rdata;
     wire                ROM_axi_rvalid;
@@ -323,7 +375,7 @@ module soc_top #(
 
     cpu_core cpu_core_0 (
         .i_Clk                  (i_Clk),
-        .i_reset                (i_reset),
+        .i_reset                (i_reset | program_loader_sys_reset),
 
         .i_timer_int_pending    (CLINT_timer_int_pending),
         .i_external_int_pending (PLIC_external_int_pending),
@@ -456,6 +508,46 @@ module soc_top #(
         .o_axi_bready           (MMIO_Port_axi_bready)
     );
 
+    program_loader program_loader_0 (
+        .i_Clk                  (i_Clk),
+        .i_reset                (i_reset),
+
+        .i_debug_en_n           (i_debug_en_n),
+        .i_rx_serial            (i_debug_rx),
+        .o_tx_serial            (o_debug_tx),
+
+        .o_sys_reset            (program_loader_sys_reset),
+
+        .o_axi_araddr           (program_loader_axi_araddr),
+        .o_axi_arvalid          (program_loader_axi_arvalid),
+        .i_axi_arready          (M3_ARREADY),
+        .o_axi_arlen            (program_loader_axi_arlen),
+        .o_axi_arsize           (program_loader_axi_arsize),
+        .o_axi_arburst          (program_loader_axi_arburst),
+
+        .i_axi_rdata            (M3_RDATA),
+        .i_axi_rvalid           (M3_RVALID),
+        .o_axi_rready           (program_loader_axi_rready),
+        .i_axi_rlast            (M3_RLAST),
+
+        .o_axi_awaddr           (program_loader_axi_awaddr),
+        .o_axi_awvalid          (program_loader_axi_awvalid),
+        .i_axi_awready          (M3_AWREADY),
+        .o_axi_awlen            (program_loader_axi_awlen),
+        .o_axi_awsize           (program_loader_axi_awsize),
+        .o_axi_awburst          (program_loader_axi_awburst),
+
+        .o_axi_wdata            (program_loader_axi_wdata),
+        .o_axi_wvalid           (program_loader_axi_wvalid),
+        .i_axi_wready           (M3_WREADY),
+        .o_axi_wlast            (program_loader_axi_wlast),
+        .o_axi_wstrb            (program_loader_axi_wstrb),
+
+        .i_axi_bresp            (M3_BRESP),
+        .i_axi_bvalid           (M3_BVALID),
+        .o_axi_bready           (program_loader_axi_bready)
+    );
+
     AXI4 AXI4_0 (
         .i_Clk                  (i_Clk),
         .i_reset                (i_reset),
@@ -521,31 +613,57 @@ module soc_top #(
         .M2_BVALID              (M2_BVALID),
         .M2_BREADY              (MMIO_Port_axi_bready),
 
-        // for future DMA, unused for now
-        .M3_ARADDR              (32'b0),
-        .M3_ARVALID             (1'b0),
+        // program_loader
+        .M3_ARADDR              (program_loader_axi_araddr),
+        .M3_ARVALID             (program_loader_axi_arvalid),
         .M3_ARREADY             (M3_ARREADY),
-        .M3_ARLEN               (8'd0),
-        .M3_ARSIZE              (3'd2),
-        .M3_ARBURST             (2'b01),
+        .M3_ARLEN               (program_loader_axi_arlen),
+        .M3_ARSIZE              (program_loader_axi_arsize),
+        .M3_ARBURST             (program_loader_axi_arburst),
         .M3_RDATA               (M3_RDATA),
         .M3_RVALID              (M3_RVALID),
-        .M3_RREADY              (1'b0),
+        .M3_RREADY              (program_loader_axi_rready),
         .M3_RLAST               (M3_RLAST),
-        .M3_AWADDR              (32'b0),
-        .M3_AWVALID             (1'b0),
+        .M3_AWADDR              (program_loader_axi_awaddr),
+        .M3_AWVALID             (program_loader_axi_awvalid),
         .M3_AWREADY             (M3_AWREADY),
-        .M3_AWLEN               (8'd0),
-        .M3_AWSIZE              (3'd2),
-        .M3_AWBURST             (2'b01),
-        .M3_WDATA               (32'b0),
-        .M3_WVALID              (1'b0),
+        .M3_AWLEN               (program_loader_axi_awlen),
+        .M3_AWSIZE              (program_loader_axi_awsize),
+        .M3_AWBURST             (program_loader_axi_awburst),
+        .M3_WDATA               (program_loader_axi_wdata),
+        .M3_WVALID              (program_loader_axi_wvalid),
         .M3_WREADY              (M3_WREADY),
-        .M3_WLAST               (1'b0),
-        .M3_WSTRB               (4'b0),
+        .M3_WLAST               (program_loader_axi_wlast),
+        .M3_WSTRB               (program_loader_axi_wstrb),
         .M3_BRESP               (M3_BRESP),
         .M3_BVALID              (M3_BVALID),
-        .M3_BREADY              (1'b0),
+        .M3_BREADY              (program_loader_axi_bready),
+
+        // DMA
+        .M4_ARADDR              (32'b0),
+        .M4_ARVALID             (1'b0),
+        .M4_ARREADY             (M4_ARREADY),
+        .M4_ARLEN               (8'd0),
+        .M4_ARSIZE              (3'd2),
+        .M4_ARBURST             (2'b01),
+        .M4_RDATA               (M4_RDATA),
+        .M4_RVALID              (M4_RVALID),
+        .M4_RREADY              (1'b0),
+        .M4_RLAST               (M4_RLAST),
+        .M4_AWADDR              (32'b0),
+        .M4_AWVALID             (1'b0),
+        .M4_AWREADY             (M4_AWREADY),
+        .M4_AWLEN               (8'd0),
+        .M4_AWSIZE              (3'd2),
+        .M4_AWBURST             (2'b01),
+        .M4_WDATA               (32'b0),
+        .M4_WVALID              (1'b0),
+        .M4_WREADY              (M4_WREADY),
+        .M4_WLAST               (1'b0),
+        .M4_WSTRB               (4'b0),
+        .M4_BRESP               (M4_BRESP),
+        .M4_BVALID              (M4_BVALID),
+        .M4_BREADY              (1'b0),
 
         // ROM
         .S0_ARADDR              (S0_ARADDR),
@@ -558,6 +676,20 @@ module soc_top #(
         .S0_RVALID              (ROM_axi_rvalid),
         .S0_RREADY              (S0_RREADY),
         .S0_RLAST               (ROM_axi_rlast),
+        .S0_AWADDR              (S0_AWADDR),
+        .S0_AWVALID             (S0_AWVALID),
+        .S0_AWREADY             (ROM_axi_awready),
+        .S0_AWLEN               (S0_AWLEN),
+        .S0_AWSIZE              (S0_AWSIZE),
+        .S0_AWBURST             (S0_AWBURST),
+        .S0_WDATA               (S0_WDATA),
+        .S0_WVALID              (S0_WVALID),
+        .S0_WREADY              (ROM_axi_wready),
+        .S0_WLAST               (S0_WLAST),
+        .S0_WSTRB               (S0_WSTRB),
+        .S0_BRESP               (ROM_axi_bresp),
+        .S0_BVALID              (ROM_axi_bvalid),
+        .S0_BREADY              (S0_BREADY),
 
         // RAM
         .S1_ARADDR              (S1_ARADDR),
@@ -706,7 +838,24 @@ module soc_top #(
         .o_axi_rdata            (ROM_axi_rdata),
         .o_axi_rvalid           (ROM_axi_rvalid),
         .i_axi_rready           (S0_RREADY),
-        .o_axi_rlast            (ROM_axi_rlast)
+        .o_axi_rlast            (ROM_axi_rlast),
+
+        .i_axi_awaddr           (S0_AWADDR),
+        .i_axi_awvalid          (S0_AWVALID),
+        .o_axi_awready          (ROM_axi_awready),
+        .i_axi_awlen            (S0_AWLEN),
+        .i_axi_awsize           (S0_AWSIZE),
+        .i_axi_awburst          (S0_AWBURST),
+
+        .i_axi_wdata            (S0_WDATA),
+        .i_axi_wvalid           (S0_WVALID),
+        .o_axi_wready           (ROM_axi_wready),
+        .i_axi_wlast            (S0_WLAST),
+        .i_axi_wstrb            (S0_WSTRB),
+
+        .o_axi_bresp            (ROM_axi_bresp),
+        .o_axi_bvalid           (ROM_axi_bvalid),
+        .i_axi_bready           (S0_BREADY)
     );
 
     RAM #(

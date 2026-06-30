@@ -1,21 +1,21 @@
-# uart_simple.S — Print "Hello World!\r\n" over UART every 1 second
+# uart_simple.S — Print "Hello World!\r\n" over UART
 
-#define UART_BASE       0x6000
+#define UART_BASE       0x21000
 #define UART_TX_DATA    0x00
 #define UART_STATUS     0x08
 #define UART_BAUD_DIV   0x0C
 
-#define CLINT_BASE      0xC000
+#define CLINT_BASE      0x24000
 #define MTIME_LO        0x00
 
-#define BAUD_DIV_VAL    10417
-#define DELAY_CYCLES    100000000
+#define BAUD_DIV_VAL    5208
+#define DELAY_CYCLES    50000000
 
     .section .text
     .global _start
 
 _start:
-    li   sp, 0x4000
+    li   sp, 0x20000
 
     /* set baud divisor for 50 MHz / 9600 */
     li   t0, UART_BASE

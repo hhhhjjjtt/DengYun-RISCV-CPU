@@ -34,13 +34,11 @@ module D_Cache (
     output reg[7:0]             o_axi_arlen,
     output reg[2:0]             o_axi_arsize,
     output reg[1:0]             o_axi_arburst,
-
     // AXI master — R channel
     input wire[31:0]            i_axi_rdata,
     input wire                  i_axi_rvalid,
     output reg                  o_axi_rready,
     input wire                  i_axi_rlast,
-
     // AXI master — AW channel (dirty eviction)
     output reg[31:0]            o_axi_awaddr,
     output reg                  o_axi_awvalid,
@@ -48,14 +46,12 @@ module D_Cache (
     output reg[7:0]             o_axi_awlen,
     output reg[2:0]             o_axi_awsize,
     output reg[1:0]             o_axi_awburst,
-
     // AXI master — W channel (dirty eviction)
     output reg[31:0]            o_axi_wdata,
     output reg                  o_axi_wvalid,
     input wire                  i_axi_wready,
     output reg                  o_axi_wlast,
     output reg[3:0]             o_axi_wstrb,
-
     // AXI master — B channel
     input wire[1:0]             i_axi_bresp,
     input wire                  i_axi_bvalid,

@@ -19,7 +19,7 @@ module RAM #(
     input wire[2:0]     i_axi_arsize,
     input wire[1:0]     i_axi_arburst,
     // AXI slave — R channel
-    output wire[31:0]   o_axi_rdata,
+    output reg[31:0]    o_axi_rdata,
     output reg          o_axi_rvalid,
     input wire          i_axi_rready,
     output reg          o_axi_rlast,
@@ -42,11 +42,11 @@ module RAM #(
     input wire          i_axi_bready
 );
 
-    (* ram_style = "block" *) reg [`DataBus] rams [0:`DataAddrDepth-1];
+    (* ram_style = "block" *) reg [`DataBus] rams [0:(`RAM_SIZE>>2)-1];
 
     integer i;
     initial begin
-        for (i = 0; i < `DataAddrDepth; i = i + 1) begin
+        for (i = 0; i < (`RAM_SIZE>>2); i = i + 1) begin
             rams[i] = `ZeroWord;
         end
         $readmemh(MEM_FILE, rams);
@@ -57,40 +57,37 @@ module RAM #(
     localparam S_WRITE = 2'd2;
     localparam S_BWAIT = 2'd3;
 
-    reg [1:0]  state;
-    reg [11:0] word_idx;    // current beat's word index into rams[]
-    reg [7:0]  beats_left;  // beats remaining after current (read path only)
+    reg[1:0]  state;
+    reg[13:0] curr_idx;    // current beat's word index into rams[]
+    reg[7:0]  beats_left;  // beats remaining after current (read path only)
 
     // ---- BRAM port signals ----
     // Read address is pre-computed combinationally so the registered BRAM
     // output lands in the same cycle that the FSM asserts rvalid.
-    reg  [11:0] ram_raddr;
-    reg  [31:0] ram_rdata;
-
+    reg[13:0] read_idx;
     always @(*) begin
-        if (state == S_IDLE && i_axi_arvalid && o_axi_arready)
-            ram_raddr = (i_axi_araddr - `RAM_BASE) >> 2;
-        else if (state == S_READ && i_axi_rready && o_axi_rvalid && !o_axi_rlast)
-            ram_raddr = word_idx + 12'd1;
-        else
-            ram_raddr = 12'd0;
+        if (state == S_IDLE && i_axi_arvalid && o_axi_arready) begin
+            read_idx = (i_axi_araddr - `RAM_BASE) >> 2;
+        end
+        else if (state == S_READ && i_axi_rready && o_axi_rvalid && !o_axi_rlast) begin
+            read_idx = curr_idx + 12'd1;
+        end
+        else begin
+            read_idx = 12'd0;
+        end
     end
 
+    // keeps write+read in one place so Vivado can infer a true BRAM
     wire ram_wen = (state == S_WRITE) && i_axi_wvalid && o_axi_wready;
-
-    // Dedicated BRAM always block — keeps write+read in one place so Vivado
-    // can infer a true block RAM with byte-enable write ports.
     always @(posedge i_Clk) begin
         if (ram_wen) begin
-            if (i_axi_wstrb[0]) rams[word_idx][ 7: 0] <= i_axi_wdata[ 7: 0];
-            if (i_axi_wstrb[1]) rams[word_idx][15: 8] <= i_axi_wdata[15: 8];
-            if (i_axi_wstrb[2]) rams[word_idx][23:16] <= i_axi_wdata[23:16];
-            if (i_axi_wstrb[3]) rams[word_idx][31:24] <= i_axi_wdata[31:24];
+            if (i_axi_wstrb[0]) rams[curr_idx][ 7: 0] <= i_axi_wdata[ 7: 0];
+            if (i_axi_wstrb[1]) rams[curr_idx][15: 8] <= i_axi_wdata[15: 8];
+            if (i_axi_wstrb[2]) rams[curr_idx][23:16] <= i_axi_wdata[23:16];
+            if (i_axi_wstrb[3]) rams[curr_idx][31:24] <= i_axi_wdata[31:24];
         end
-        ram_rdata <= rams[ram_raddr];
+        o_axi_rdata <= rams[read_idx];
     end
-
-    assign o_axi_rdata = ram_rdata;
 
     always @(posedge i_Clk or posedge i_reset) begin
         if (i_reset) begin
@@ -104,30 +101,28 @@ module RAM #(
             o_axi_bresp   <= 2'b00;
         end else begin
             case (state)
-
                 // Accept AR (reads) or AW (writes); reads take priority.
                 S_IDLE: begin
                     o_axi_arready <= 1'b1;
                     o_axi_awready <= 1'b1;
                     o_axi_wready  <= 1'b0;
-
                     if (i_axi_arvalid && o_axi_arready) begin
-                        word_idx      <= (i_axi_araddr - `RAM_BASE) >> 2;
+                        curr_idx      <= (i_axi_araddr - `RAM_BASE) >> 2;
                         beats_left    <= i_axi_arlen;
                         o_axi_rvalid  <= 1'b1;
                         o_axi_rlast   <= (i_axi_arlen == 8'd0);
                         o_axi_arready <= 1'b0;
                         o_axi_awready <= 1'b0;
                         state         <= S_READ;
-                    end else if (i_axi_awvalid && o_axi_awready) begin
-                        word_idx      <= (i_axi_awaddr - `RAM_BASE) >> 2;
+                    end 
+                    else if (i_axi_awvalid && o_axi_awready) begin
+                        curr_idx      <= (i_axi_awaddr - `RAM_BASE) >> 2;
                         o_axi_awready <= 1'b0;
                         o_axi_arready <= 1'b0;
                         o_axi_wready  <= 1'b1;
                         state         <= S_WRITE;
                     end
                 end
-
                 S_READ: begin
                     if (i_axi_rready && o_axi_rvalid) begin
                         if (o_axi_rlast) begin
@@ -136,14 +131,14 @@ module RAM #(
                             o_axi_arready <= 1'b1;
                             o_axi_awready <= 1'b1;
                             state         <= S_IDLE;
-                        end else begin
-                            word_idx    <= word_idx + 12'd1;
-                            beats_left  <= beats_left - 8'd1;
-                            o_axi_rlast <= (beats_left - 8'd1 == 8'd0);
+                        end 
+                        else begin
+                            curr_idx      <= curr_idx + 12'd1;
+                            beats_left    <= beats_left - 8'd1;
+                            o_axi_rlast   <= (beats_left - 8'd1 == 8'd0);
                         end
                     end
                 end
-
                 S_WRITE: begin
                     if (i_axi_wvalid && o_axi_wready) begin
                         if (i_axi_wlast) begin
@@ -151,12 +146,12 @@ module RAM #(
                             o_axi_bvalid <= 1'b1;
                             o_axi_bresp  <= 2'b00;
                             state        <= S_BWAIT;
-                        end else begin
-                            word_idx <= word_idx + 12'd1;
+                        end 
+                        else begin
+                            curr_idx <= curr_idx + 12'd1;
                         end
                     end
                 end
-
                 S_BWAIT: begin
                     if (i_axi_bready && o_axi_bvalid) begin
                         o_axi_bvalid  <= 1'b0;
@@ -165,7 +160,6 @@ module RAM #(
                         state         <= S_IDLE;
                     end
                 end
-
                 default: state <= S_IDLE;
             endcase
         end

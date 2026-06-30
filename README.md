@@ -31,7 +31,7 @@ Requires `riscv-none-elf-gcc`. Output lands in `test/test_full/mem/`.
 3. Full SoC, assembly tests passing with new bus/cache (✓)
 4. UART, GPIO, CLINT timer (✓)
 5. FPGA synthesis, timing closure, blink/uart hello world (✓)
-6. Program loader
+6. Program loader (✓)
 7. C toolchain bring-up, printf, basic programs
 8. Running Coremark performance check
 ---

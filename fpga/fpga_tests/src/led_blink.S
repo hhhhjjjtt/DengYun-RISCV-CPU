@@ -1,7 +1,7 @@
-# led_blink.S — Toggle GPIO pin 0 (LD0) every 1 second
+# led_blink.S
 
-#define GPIO_BASE       0x8000
-#define CLINT_BASE      0xC000
+#define GPIO_BASE       0x22000
+#define CLINT_BASE      0x24000
 
 #define GPIO_OUT_DATA   0x00
 #define GPIO_DIR        0x08
@@ -15,7 +15,7 @@
     .global _start
 
 _start:
-    li   sp, 0x4000
+    li   sp, 0x20000
 
     /* configure GPIO: pin 0 = output */
     li   t0, GPIO_BASE

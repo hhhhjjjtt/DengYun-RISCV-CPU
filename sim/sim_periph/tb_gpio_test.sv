@@ -36,11 +36,12 @@ module tb_gpio_test;
     assign gpio_pins = {reg_gpio1, 1'bz};
 
     soc_top dut (
-        .i_Clk       (reg_Clk),
-        .i_reset     (reg_reset),
-        .i_rx_serial (1'b1),
-        .o_tx_serial (),
-        .gpio_pins   (gpio_pins)
+        .i_Clk          (reg_Clk),
+        .i_reset        (reg_reset),
+        .i_debug_en_n   (1'b1),
+        .i_rx_serial    (1'b1),
+        .o_tx_serial    (),
+        .gpio_pins      (gpio_pins)
     );
 
     initial reg_Clk = 0;

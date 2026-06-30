@@ -108,18 +108,18 @@ module MEM (
         o_dcache_en = `Disable;
         o_mmio_en   = `Disable;
         if (o_dmem_rd_en) begin
-            if (i_mem_addr >= `RAM_BASE && i_mem_addr < `RAM_BASE + `REGION_SIZE) begin
+            if (i_mem_addr >= `RAM_BASE && i_mem_addr < `RAM_BASE + `RAM_SIZE) begin
                 o_dcache_en = `Enable;
             end
-            else if (i_mem_addr >= `RAM_BASE + `REGION_SIZE) begin
+            else if (i_mem_addr >= `RAM_BASE + `RAM_SIZE) begin
                 o_mmio_en   = `Enable;
             end
         end
         else if (o_dmem_wr_en) begin
-            if (i_mem_addr >= `RAM_BASE && i_mem_addr < `RAM_BASE + `REGION_SIZE) begin
+            if (i_mem_addr >= `RAM_BASE && i_mem_addr < `RAM_BASE + `RAM_SIZE) begin
                 o_dcache_en = `Enable;
             end
-            else if (i_mem_addr >= `RAM_BASE + `REGION_SIZE) begin
+            else if (i_mem_addr >= `RAM_BASE + `RAM_SIZE) begin
                 o_mmio_en   = `Enable;
             end
         end

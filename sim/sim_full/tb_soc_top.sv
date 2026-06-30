@@ -10,12 +10,16 @@ module tb_soc_top ();
     
     reg     reg_rx_serial;
     wire    wire_tx_serial;
+    wire    wire_debug_tx;
 
     soc_top soc_top_0 (
         .i_Clk                  (reg_Clk),
         .i_reset                (reg_reset),
-        .o_tx_serial            (wire_tx_serial),
-        .i_rx_serial            (reg_rx_serial)
+        .i_debug_en_n           (1'b1),
+        .i_debug_rx             (1'b1),
+        .o_debug_tx             (wire_debug_tx),
+        .i_rx_serial            (reg_rx_serial),
+        .o_tx_serial            (wire_tx_serial)
     );
 
     string  testcase;
