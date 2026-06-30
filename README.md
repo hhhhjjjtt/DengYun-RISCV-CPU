@@ -74,6 +74,13 @@ Then, connect a USB-to-TTL adapter to the fpga board (defaulted as W9, Y8, W8) (
 | `i_debug_en_n` | W8 | adapter RTS (active-low; idles high = run mode) |
 
 Then load and run:
+
+```bash
+python program_loader.py <port_num> <mem_dir>
+```
+
+for example:
+
 ```bash
 python program_loader.py COM3 fpga/fpga_tests/mem   # Windows
 python program_loader.py /dev/ttyUSB0 sw/hello/mem  # Linux
@@ -81,8 +88,6 @@ python program_loader.py /dev/ttyUSB0 sw/hello/mem  # Linux
 The script holds the CPU in reset while writing, then releases it automatically.
 
 ### Default pin reference (PYNQ-Z2)
-
-Pin mapping can be adjusted in `fpga/constrs`
 
 | Port | Pin | Function |
 |------|-----|----------|
@@ -95,6 +100,8 @@ Pin mapping can be adjusted in `fpga/constrs`
 | `i_debug_rx` | W9 | Debug loader RX |
 | `o_debug_tx` | Y8 | Debug loader TX |
 | `i_debug_en_n` | W8 | Debug enable, active-low |
+
+Pin mapping can be adjusted in `fpga/constrs`
 
 ## Performance
 [Placeholder — Add after Coremark test]
