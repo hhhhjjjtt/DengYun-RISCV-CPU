@@ -17,17 +17,18 @@
 _start:
     li   sp, 0x20000
 
-    /* configure GPIO: pin 0 = output */
+    /* configure GPIO: pins 0 and 1 = outputs */
     li   t0, GPIO_BASE
-    li   t1, 0x1
+    li   t1, 0x3
     sw   t1, GPIO_DIR(t0)
 
     /* clear INT_STATE (flush any X from floating pin during IOBUF setup) */
     li   t1, -1
     sw   t1, GPIO_INT_STATE(t0)
 
-    /* start with LED off */
-    sw   zero, GPIO_OUT_DATA(t0)
+    /* start with LED0 on, LED1 off */
+    li   t1, 0x1
+    sw   t1, GPIO_OUT_DATA(t0)
 
     /* pre-load toggle period into s2 to avoid reloading inside the loop */
     li   s2, TOGGLE_CYCLES
@@ -36,7 +37,7 @@ _start:
     li   t0, CLINT_BASE
     lw   s0, MTIME(t0)          /* s0 = last_toggle_time */
 
-    li   s1, 0                   /* s1 = current LED state */
+    li   s1, 0x1                 /* s1 = current output (LED0 on, LED1 off) */
 
 blink_loop:
     /* poll mtime until 1 second has elapsed */
@@ -48,8 +49,8 @@ blink_loop:
     /* 1 second elapsed: update reference time */
     mv   s0, t1
 
-    /* toggle LED state and write to GPIO */
-    xori s1, s1, 1
+    /* alternate both LEDs: 0b01 <-> 0b10 */
+    xori s1, s1, 0x3
     li   t0, GPIO_BASE
     sw   s1, GPIO_OUT_DATA(t0)
 

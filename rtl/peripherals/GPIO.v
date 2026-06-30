@@ -1,6 +1,6 @@
 `include "../defines.v"
 
-// 8-pin GPIO
+// 2-pin GPIO
 module GPIO # (
     parameter N = 2         // number of GPIO pins
 ) (

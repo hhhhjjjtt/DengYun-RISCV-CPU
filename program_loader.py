@@ -150,8 +150,8 @@ def main() -> None:
     args = ap.parse_args()
 
     # ---- Build firmware blob ------------------------------------------------
-    rom_path = os.path.join(args.mem_dir, 'inst_rom', 'rom.mem')
-    ram_path = os.path.join(args.mem_dir, 'data_ram', 'ram.mem')
+    rom_path = os.path.join(args.mem_dir, 'rom.mem')
+    ram_path = os.path.join(args.mem_dir, 'ram.mem')
 
     print(f"ROM: {rom_path}")
     rom_bytes = parse_mem(rom_path, args.rom_size)
